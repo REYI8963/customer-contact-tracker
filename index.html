@@ -113,6 +113,9 @@
   .cct-header-left { display: flex; align-items: center; gap: 12px; }
   .cct-header-title { font-weight: 800; font-size: 16px; color: #0F172A; }
   .cct-header-sub { font-size: 12px; color: var(--primary); font-weight: 600; background: var(--primary-light); padding: 2px 8px; border-radius: 6px; display: inline-block; }
+  .cct-sync-status { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; margin-left: 6px; }
+  .cct-sync-status.online { background: #DCFCE7; color: #15803D; }
+  .cct-sync-status.local { background: #FEF3C7; color: #B45309; }
 
   /* ---- Tabs ---- */
   .cct-tabs { display: flex; gap: 8px; padding: 10px 20px 0; background: var(--surface); border-bottom: 1px solid var(--border); }
@@ -254,7 +257,7 @@
   }
   .cct-quick-chip:hover { background: var(--primary-light); color: var(--primary-dark); border-color: var(--primary); }
 
-  /* 範本情境切換 Tab */
+  /* 範本情境切換 Bar */
   .cct-scenario-bar { display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 4px; }
   .cct-scenario-btn {
     border: 1.5px solid var(--border); background: var(--bg); padding: 8px 14px; border-radius: 10px;
@@ -266,13 +269,36 @@
 <body>
 <div id="app"></div>
 
+<!-- 載入 Supabase JS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script>
-const LOGIN_PASSWORD = "65905937"; // 南倉／中倉共用
+/* ================================================================== */
+/* ☁️ Supabase 雲端資料庫設定（請貼上您的專案資訊）                    */
+/* ================================================================== */
+const SUPABASE_URL = "https://fgfdvjjrzzjavcseulpg.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnZmR2ampyenpqYXZjc2V1bHBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyNDQyODcsImV4cCI6MjEwMzgyMDI4N30.nJ7PCIJiQNUjTUK3cTtYjvdSocJU5XktP2yt-OQVOCE";
+
+const LOGIN_PASSWORD = "65905937";
 const STORAGE_KEY_ACTIVE = "cct_active_records";
 const STORAGE_KEY_HISTORY = "cct_history_records";
 
+let supabaseClient = null;
+let isCloudSynced = false;
+
+// 初始化 Supabase 連線
+if (typeof supabase !== "undefined" && SUPABASE_URL && SUPABASE_ANON_KEY) {
+  try {
+    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    isCloudSynced = true;
+  } catch (err) {
+    console.error("Supabase 連線失敗，自動切換至本機模式", err);
+    isCloudSynced = false;
+  }
+}
+
 const CATEGORIES = [
-  { id: "approve", label: "約配未接", color: "#2563EB" },
+  { id: "approve", label: "約配未接", color: "#4F46E5" },
   { id: "erlian", label: "二聯未接", color: "#D97706" },
   { id: "complaint", label: "客訴未接", color: "#DC2626" },
   { id: "zilian", label: "轉自聯", color: "#7C3AED" },
@@ -280,66 +306,70 @@ const CATEGORIES = [
 ];
 const CAT_MAP = Object.fromEntries(CATEGORIES.map(c => [c.id, c]));
 
-const PLATE_OPTIONS = ["展", "陳", "9119", "3857", "6852"];
-
 const ERLIAN_SUBTYPES = [
   { id: "delivery", label: "配送 (一般)" },
   { id: "rail", label: "電軌升級" },
   { id: "complaint", label: "客訴件" },
 ];
 
-const ERLIAN_FIELDS = {
-  delivery: [
-    { key: "plate", label: "車牌", type: "datalist", options: PLATE_OPTIONS },
-    { key: "scheduledDate", label: "約定配送日期", type: "date" },
-    { key: "eta", label: "配送時段", type: "text" },
-    { key: "balance", label: "尾款", type: "checkbox" },
-    { key: "note", label: "備註", type: "textarea" },
-  ],
-  rail: [
-    { key: "scheduledDate", label: "預約升級日期", type: "date" },
-    { key: "eta", label: "安排時段", type: "text" },
-    { key: "note", label: "備註", type: "textarea" },
-  ],
-  complaint: [
-    { key: "orderNumber", label: "客訴件編號", type: "text" },
-    { key: "scheduledDate", label: "排約維修日期", type: "date" },
-    { key: "item", label: "回收維修商品", type: "text" },
-    { key: "note", label: "備註", type: "textarea" },
-  ],
-};
+const PLATE_OPTIONS = ["展", "陳", "9119", "3857", "6852"];
 
-const CATEGORY_FIELDS = {
-  approve: [
-    { key: "orderNumber", label: "訂單編號", type: "text" },
-    { key: "availableTrips", label: "目前可提供車趟", type: "text" },
-    { key: "holdUntil", label: "車趟保留至", type: "date" },
-    { key: "note", label: "備註", type: "textarea" },
-  ],
-  complaint: [
-    { key: "item", label: "客訴品項", type: "text" },
-    { key: "availableTrips", label: "目前可提供車趟", type: "text" },
-    { key: "holdUntil", label: "車趟保留至", type: "date" },
-    { key: "content", label: "客訴內容", type: "textarea" },
-    { key: "note", label: "備註", type: "textarea" },
-  ],
-  zilian: [
-    { key: "orderNumber", label: "訂單編號", type: "text" },
-    { key: "expectedDate", label: "當初預計交貨日期", type: "date" },
-    { key: "note", label: "備註", type: "textarea" },
-  ],
-  other: [{ key: "note", label: "備註", type: "textarea" }],
-};
-
-function getCategoryFields(category, erlianSubType) {
-  if (category === "erlian") {
-    return ERLIAN_FIELDS[erlianSubType || "delivery"] || ERLIAN_FIELDS.delivery;
+function getCategoryFields(category, erlianSubType = "delivery") {
+  if (category === "approve") {
+    return [
+      { key: "availableTrip", label: "目前可提供車趟", type: "text" },
+      { key: "note", label: "備註", type: "textarea" },
+    ];
   }
-  return CATEGORY_FIELDS[category] || [];
+  if (category === "erlian") {
+    if (erlianSubType === "delivery") {
+      return [
+        { key: "scheduledDate", label: "約定配送日期", type: "date" },
+        { key: "plate", label: "車牌", type: "datalist", options: PLATE_OPTIONS },
+        { key: "eta", label: "預計抵達時間", type: "text" },
+        { key: "balance", label: "尾款", type: "checkbox" },
+        { key: "note", label: "備註", type: "textarea" },
+      ];
+    }
+    if (erlianSubType === "rail") {
+      return [
+        { key: "scheduledDate", label: "升級約定日期", type: "date" },
+        { key: "scheduledTime", label: "安排時段", type: "text" },
+        { key: "plate", label: "車牌", type: "datalist", options: PLATE_OPTIONS },
+        { key: "balance", label: "尾款", type: "checkbox" },
+        { key: "note", label: "備註", type: "textarea" },
+      ];
+    }
+    if (erlianSubType === "complaint") {
+      return [
+        { key: "complaintNo", label: "客訴件編號", type: "text" },
+        { key: "scheduledDate", label: "回收維修排約日期", type: "date" },
+        { key: "scheduledTime", label: "排約時段", type: "text" },
+        { key: "item", label: "回收維修商品", type: "text" },
+        { key: "note", label: "備註", type: "textarea" },
+      ];
+    }
+  }
+  if (category === "complaint") {
+    return [
+      { key: "availableTrip", label: "目前可提供車趟", type: "text" },
+      { key: "item", label: "客訴品項", type: "text" },
+      { key: "content", label: "客訴內容", type: "textarea" },
+    ];
+  }
+  if (category === "zilian") {
+    return [
+      { key: "orderNumber", label: "訂單編號", type: "text" },
+      { key: "expectedDate", label: "當初預計交貨日期", type: "date" },
+      { key: "note", label: "備註", type: "textarea" },
+    ];
+  }
+  return [{ key: "note", label: "備註", type: "textarea" }];
 }
 
-const CONVERT_FIELDS = CATEGORY_FIELDS.zilian;
+const CONVERT_FIELDS = getCategoryFields("zilian");
 
+/* ---- 南倉資料 ---- */
 const RAW_AREAS_SOUTH = {
   嘉義市: ["東區", "西區"],
   嘉義縣: ["番路鄉","梅山鄉","竹崎鄉","阿里山鄉","中埔鄉","大埔鄉","水上鄉","鹿草鄉","太保市","朴子市","東石鄉","六腳鄉","新港鄉","民雄鄉","大林鎮","溪口鄉","義竹鄉","布袋鎮"],
@@ -350,6 +380,7 @@ const RAW_AREAS_SOUTH = {
 };
 const CONTACTS_SOUTH = ["Lena念臻", "Linda采陵", "Anna芊岱", "Wendy咨汶"];
 
+/* ---- 中倉資料 ---- */
 const RAW_AREAS_NORTH = RAW_AREAS_SOUTH;
 const CONTACTS_NORTH = CONTACTS_SOUTH;
 
@@ -378,6 +409,7 @@ const WAREHOUSES = {
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
 function fmtDateTime(iso) {
+  if (!iso) return "—";
   const d = new Date(iso), p = n => String(n).padStart(2, "0");
   return `${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
@@ -400,82 +432,44 @@ function copyToClipboard(text) {
   document.body.appendChild(ta);
   ta.focus();
   ta.select();
-  try { document.execCommand("copy"); } catch (err) { console.error("複製失敗", err); }
+  try {
+    document.execCommand("copy");
+  } catch (err) {
+    console.error("複製失敗", err);
+  }
   document.body.removeChild(ta);
 }
 
 function generateChatTemplate(record, scenario = "standard") {
   const f = record.fields || {};
-  const bizName = "@";
+  const areaText = record.area || "未填寫";
   const nameText = `${record.lastName || ""}${record.gender || ""}`.trim() || "顧客";
-  const orderNum = f.orderNumber ? f.orderNumber : "";
-  const phoneText = record.phoneLast3 ? `末三碼 ${record.phoneLast3}` : "";
-  const addressText = f.address || record.area || "";
 
   if (record.category === "approve") {
-    const tripText = f.availableTrips || f.appointmentDate || "";
-    const holdText = f.holdUntil ? `${fmtDate(f.holdUntil)}` : "";
-    return `${bizName}
-訂單：#${orderNum}
-客戶姓名：${nameText}
-因多日致電約配皆轉語音信箱，備用電話也無法聯繫上
-目前可提供車趟為${tripText}
-再麻煩與客確認當天是否方便收貨 謝謝
-(車趟可保留至${holdText}前)`;
+    return `@\n訂單：#\n客戶姓名：${nameText}\n因多日致電約配皆轉語音信箱，備用電話也無法聯繫上\n目前可提供車趟為：${f.availableTrip || ""}\n再麻煩與客確認當天是否方便收貨 謝謝\n(車趟可保留至前)`;
+  }
+  
+  if (record.category === "complaint") {
+    return `@\n訂單：#\n客戶姓名：${nameText}\n因多日致電確認客訴處理時間皆轉語音信箱，備用電話也無法聯繫上\n目前可提供車趟為：${f.availableTrip || ""}\n再麻煩與客確認約配日期當天是否方便收貨 謝謝\n(車趟可保留至前)`;
   }
 
   if (record.category === "erlian") {
     if (scenario === "rail") {
       const dateText = f.scheduledDate ? fmtDate(f.scheduledDate) : "(日期)";
-      const sizeText = f.cabinetSize || "";
-      return `${bizName}
-訂單 #${orderNum}
-姓名：${nameText}
-電話：${phoneText}
-地址：${addressText}
-
-已約${dateText}到府升級 超級收納餐邊櫃 (${sizeText})cm電軌，路線安排時間間抵達。
-電聯未接，需麻煩業務端LINE協助通知時段，當日再請顧客留意師傅抵達前30分鐘電聯，謝謝!`;
+      const timeText = f.scheduledTime || "";
+      return `@\n訂單 #\n姓名：${nameText}\n電話：末三碼 ${record.phoneLast3}\n地址：${areaText}\n\n已約 ${dateText} 到府升級 超級收納餐邊櫃 ()cm電軌，路線安排 ${timeText} 間抵達。\n電聯未接，需麻煩業務端LINE協助通知時段，當日再請顧客留意師傅抵達前30分鐘電聯，謝謝!`;
     }
-
     if (scenario === "complaint_erlian") {
-      const dateText = f.scheduledDate ? fmtDate(f.scheduledDate) : "";
-      const itemText = f.item || "商品";
-      return `@
-客訴件編號：${orderNum || itemText}
-客戶姓名：${nameText}
-已排約${dateText}時段 回收${itemText}維修，
-今日二聯未接電話，再請協助通知顧客，謝謝!`;
+      const dateText = f.scheduledDate ? fmtDate(f.scheduledDate) : "(日期)";
+      const timeText = f.scheduledTime || "";
+      return `@\n客訴件編號：${f.complaintNo || ""}\n客戶姓名：${nameText}\n已排約 ${dateText} ${timeText} 回收 ${f.item || "(商品)"} 維修，\n今日二聯未接電話，再請協助通知顧客，謝謝!`;
     }
-
     const dateText = f.scheduledDate ? fmtDate(f.scheduledDate) : "";
-    const etaText = f.eta ? f.eta : "";
-    return `【通知時段】 @
-訂單 : ${orderNum}
-姓名：${nameText}
-電話：${phoneText}
-地址：${addressText}
-
-已約${dateText}，順趟路線安排${etaText}間送達。
-今日二聯都未接電話，需麻煩業務端LINE協助通知時段，再請顧客留意司機當日抵達前30分鐘電聯，謝謝!`;
+    const etaText = f.eta || "";
+    return `【通知時段】 @\n訂單 :\n姓名：${nameText}\n電話：末三碼 ${record.phoneLast3}\n地址：${areaText}\n\n已約 ${dateText}，順趟路線安排 ${etaText} 間送達。\n今日二聯都未接電話，需麻煩業務端LINE協助通知時段，再請顧客留意司機當日抵達前30分鐘電聯，謝謝!`;
   }
 
-  if (record.category === "complaint") {
-    const tripText = f.availableTrips || "";
-    const holdText = f.holdUntil ? `${fmtDate(f.holdUntil)}` : "";
-    return `${bizName}
-訂單：#${orderNum}
-客戶姓名：${nameText}
-因多日致電確認客訴處理時間皆轉語音信箱，備用電話也無法聯繫上
-目前可提供車趟為${tripText}
-再麻煩與客確認約配日期當天是否方便收貨 謝謝
-(車趟可保留至${holdText}前)`;
-  }
-
-  return `${bizName}
-客戶：${nameText}（末三碼：${record.phoneLast3}）
-地區：${record.area || "未填寫"}
-備註：${f.note || "無"}`;
+  return `@\n客戶：${nameText}（末三碼：${record.phoneLast3}）\n地區：${areaText}\n備註：${f.note || "無"}\n負責窗口：${record.contact}`;
 }
 
 let state = {
@@ -509,8 +503,6 @@ let state = {
   chatScenario: "standard",
   chatText: "",
   copySuccess: false,
-
-  areaOpenFor: null,
 };
 
 function loadStorage() {
@@ -519,14 +511,48 @@ function loadStorage() {
   try { state.historyRecords = JSON.parse(localStorage.getItem(STORAGE_KEY_HISTORY) || "[]"); }
   catch(e) { state.historyRecords = []; }
 }
-
-function saveActive() {
-  try { localStorage.setItem(STORAGE_KEY_ACTIVE, JSON.stringify(state.activeRecords)); }
-  catch (e) { console.error("localStorage 寫入失敗：", e); }
+function saveActiveLocal() {
+  try { localStorage.setItem(STORAGE_KEY_ACTIVE, JSON.stringify(state.activeRecords)); } catch (e) {}
 }
-function saveHistory() {
-  try { localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(state.historyRecords)); }
-  catch (e) { console.error("localStorage 寫入失敗：", e); }
+function saveHistoryLocal() {
+  try { localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(state.historyRecords)); } catch (e) {}
+}
+
+async function initCloudSync() {
+  if (!isCloudSynced || !supabaseClient) {
+    console.log("未設定 Supabase 金鑰，自動開啟 LocalStorage 本機模式");
+    loadStorage();
+    render();
+    return;
+  }
+
+  try {
+    const { data: activeData } = await supabaseClient.from('active_records').select('*');
+    if (activeData) state.activeRecords = activeData;
+
+    const { data: historyData } = await supabaseClient.from('history_records').select('*');
+    if (historyData) state.historyRecords = historyData;
+
+    render();
+
+    // 訂閱 Supabase Realtime 即時廣播
+    supabaseClient
+      .channel('public:records')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'active_records' }, async () => {
+        const { data } = await supabaseClient.from('active_records').select('*');
+        if (data) { state.activeRecords = data; render(); }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'history_records' }, async () => {
+        const { data } = await supabaseClient.from('history_records').select('*');
+        if (data) { state.historyRecords = data; render(); }
+      })
+      .subscribe();
+
+  } catch (err) {
+    console.error("雲端同步失敗，切換回本機模式", err);
+    loadStorage();
+    render();
+  }
 }
 
 function freshAddForm() {
@@ -547,7 +573,7 @@ function doLogin() {
     state.warehouse = state.loginPickWarehouse;
     state.authed = true;
     state.loginError = "";
-    loadStorage();
+    if (!isCloudSynced) loadStorage();
   } else {
     state.loginError = "密碼錯誤，請再試一次";
   }
@@ -557,7 +583,8 @@ function doLogout() { state.authed = false; state.loginPwd = ""; render(); }
 
 function openAdd() { state.showAdd = true; state.addForm = freshAddForm(); render(); }
 function closeAdd() { state.showAdd = false; state.addForm = null; render(); }
-function saveAdd() {
+
+async function saveAdd() {
   const f = state.addForm;
   if (!f.phoneLast3.trim()) {
     const input = document.getElementById("phoneInput");
@@ -566,13 +593,21 @@ function saveAdd() {
     if (input) { input.style.borderColor = "#B96B6B"; input.focus(); }
     return;
   }
+  const recordId = uid();
   const record = {
-    id: uid(), warehouse: state.warehouse, category: f.category, erlianSubType: f.erlianSubType || "delivery", createdAt: new Date().toISOString(),
+    id: recordId, warehouse: state.warehouse, category: f.category, erlianSubType: f.erlianSubType || "delivery", createdAt: new Date().toISOString(),
     phoneLast3: f.phoneLast3.trim(), lastName: f.lastName.trim(), gender: f.gender,
     area: f.area, contact: f.contact, fields: { ...f.fields },
   };
-  state.activeRecords.unshift(record);
-  saveActive();
+
+  if (isCloudSynced && supabaseClient) {
+    try {
+      await supabaseClient.from('active_records').insert([record]);
+    } catch (e) { console.error("Cloud save failed:", e); }
+  } else {
+    state.activeRecords.unshift(record);
+    saveActiveLocal();
+  }
   closeAdd();
 }
 
@@ -591,7 +626,7 @@ function openEdit(id, type = "active") {
 }
 function closeEdit() { state.editTarget = null; state.editForm = null; render(); }
 
-function saveEdit() {
+async function saveEdit() {
   const f = state.editForm;
   if (!f.phoneLast3.trim()) {
     const input = document.getElementById("editPhoneInput");
@@ -601,39 +636,36 @@ function saveEdit() {
     return;
   }
 
-  if (state.editType === "active") {
-    const idx = state.activeRecords.findIndex(r => r.id === f.id);
-    if (idx !== -1) {
-      state.activeRecords[idx] = {
-        ...state.activeRecords[idx],
-        category: f.category,
-        erlianSubType: f.erlianSubType || "delivery",
-        phoneLast3: f.phoneLast3.trim(),
-        lastName: f.lastName.trim(),
-        gender: f.gender,
-        area: f.area,
-        contact: f.contact,
-        fields: { ...f.fields },
-        updatedAt: new Date().toISOString(),
-      };
-      saveActive();
-    }
+  const updatedRecord = {
+    category: f.category,
+    erlianSubType: f.erlianSubType || "delivery",
+    phoneLast3: f.phoneLast3.trim(),
+    lastName: f.lastName.trim(),
+    gender: f.gender,
+    area: f.area,
+    contact: f.contact,
+    fields: { ...f.fields },
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (isCloudSynced && supabaseClient) {
+    try {
+      const table = state.editType === "active" ? 'active_records' : 'history_records';
+      await supabaseClient.from(table).update(updatedRecord).eq('id', f.id);
+    } catch (e) { console.error("Cloud update failed:", e); }
   } else {
-    const idx = state.historyRecords.findIndex(r => r.id === f.id);
-    if (idx !== -1) {
-      state.historyRecords[idx] = {
-        ...state.historyRecords[idx],
-        category: f.category,
-        erlianSubType: f.erlianSubType || "delivery",
-        phoneLast3: f.phoneLast3.trim(),
-        lastName: f.lastName.trim(),
-        gender: f.gender,
-        area: f.area,
-        contact: f.contact,
-        fields: { ...f.fields },
-        updatedAt: new Date().toISOString(),
-      };
-      saveHistory();
+    if (state.editType === "active") {
+      const idx = state.activeRecords.findIndex(r => r.id === f.id);
+      if (idx !== -1) {
+        state.activeRecords[idx] = { ...state.activeRecords[idx], ...updatedRecord };
+        saveActiveLocal();
+      }
+    } else {
+      const idx = state.historyRecords.findIndex(r => r.id === f.id);
+      if (idx !== -1) {
+        state.historyRecords[idx] = { ...state.historyRecords[idx], ...updatedRecord };
+        saveHistoryLocal();
+      }
     }
   }
   closeEdit();
@@ -674,25 +706,31 @@ function switchChatScenario(sc) {
 }
 
 function doCopyChat() {
-  const chatTextArea = document.getElementById("chatTextArea");
-  if (chatTextArea) {
-    state.chatText = chatTextArea.value;
-  }
   copyToClipboard(state.chatText);
   state.copySuccess = true;
   render();
 }
 
-function markDone(id) {
+async function markDone(id) {
   const record = state.activeRecords.find(r => r.id === id);
   if (!record) return;
-  state.activeRecords = state.activeRecords.filter(r => r.id !== id);
-  if (record.category === "zilian") {
-    state.historyRecords.unshift({ ...record, resolvedAt: new Date().toISOString() });
-    saveHistory();
+
+  if (isCloudSynced && supabaseClient) {
+    try {
+      await supabaseClient.from('active_records').delete().eq('id', id);
+      if (record.category === "zilian") {
+        await supabaseClient.from('history_records').insert([{ ...record, resolvedAt: new Date().toISOString() }]);
+      }
+    } catch (e) { console.error("Cloud mark done failed:", e); }
+  } else {
+    state.activeRecords = state.activeRecords.filter(r => r.id !== id);
+    if (record.category === "zilian") {
+      state.historyRecords.unshift({ ...record, resolvedAt: new Date().toISOString() });
+      saveHistoryLocal();
+    }
+    saveActiveLocal();
+    render();
   }
-  saveActive();
-  render();
 }
 
 function openConvert(id) {
@@ -703,17 +741,28 @@ function openConvert(id) {
   render();
 }
 function closeConvert() { state.convertTarget = null; state.convertForm = {}; render(); }
-function confirmConvert() {
+
+async function confirmConvert() {
   const record = state.convertTarget;
-  state.activeRecords = state.activeRecords.filter(r => r.id !== record.id);
+  const newId = uid();
   const converted = {
-    id: uid(), warehouse: state.warehouse, category: "zilian",
+    id: newId, warehouse: state.warehouse, category: "zilian",
     createdAt: record.createdAt, convertedAt: new Date().toISOString(),
     phoneLast3: record.phoneLast3, lastName: record.lastName, gender: record.gender,
     area: record.area, contact: record.contact, fields: { ...state.convertForm },
   };
-  state.activeRecords.unshift(converted);
-  saveActive();
+
+  if (isCloudSynced && supabaseClient) {
+    try {
+      await supabaseClient.from('active_records').delete().eq('id', record.id);
+      await supabaseClient.from('active_records').insert([converted]);
+    } catch (e) { console.error("Cloud convert failed:", e); }
+  } else {
+    state.activeRecords = state.activeRecords.filter(r => r.id !== record.id);
+    state.activeRecords.unshift(converted);
+    saveActiveLocal();
+    render();
+  }
   closeConvert();
 }
 
@@ -776,7 +825,12 @@ function renderMain() {
         <div class="cct-logo cct-logo-sm">CCT</div>
         <div>
           <div class="cct-header-title">MR.LIVING倉儲客服系統</div>
-          <div class="cct-header-sub">${esc(wh.name)}（本機測試版）</div>
+          <div class="cct-header-sub">
+            ${esc(wh.name)}
+            <span class="cct-sync-status ${isCloudSynced ? 'online' : 'local'}">
+              ${isCloudSynced ? '🟢 雲端即時同步中' : '🟡 本機模式'}
+            </span>
+          </div>
         </div>
       </div>
       <button type="button" class="cct-icon-btn" data-act="logout" title="登出">登出</button>
@@ -1351,6 +1405,7 @@ function renderListOnly() {
   }
 }
 
+initCloudSync();
 render();
 </script>
 </body>
