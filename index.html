@@ -33,7 +33,6 @@
     letter-spacing: 0.01em;
   }
 
-  /* ---- Dashboard KPI 統計儀表板 ---- */
   .cct-stats-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -67,7 +66,6 @@
   .cct-stat-icon.warning { background: #FFF7ED; color: #EA580C; }
   .cct-stat-icon.success { background: #ECFDF5; color: #059669; }
 
-  /* ---- 登入畫面 ---- */
   .cct-login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
   .cct-login-card {
     background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
@@ -83,7 +81,7 @@
     box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
   }
   .cct-logo-sm { width: 38px; height: 38px; font-size: 12px; margin: 0; border-radius: 12px; }
-  .cct-login-card h1 { font-size: 20px; margin: 0 0 4px; font-weight: 700; color: #0F172A; }
+  .cct-login-card h1 { font-size: 18px; margin: 0 0 4px; font-weight: 800; color: #0F172A; }
   .cct-login-sub { color: var(--text-muted); font-size: 13px; margin: 0 0 24px; }
   .cct-wh-picker { display: flex; gap: 10px; margin-bottom: 20px; }
   .cct-wh-btn {
@@ -104,7 +102,6 @@
   .cct-login-error { color: var(--danger); font-size: 13px; margin-bottom: 12px; text-align: left; font-weight: 600; }
   .cct-login-btn { width: 100%; justify-content: center; }
 
-  /* ---- Header ---- */
   .cct-header {
     display: flex; align-items: center; justify-content: space-between; padding: 16px 20px;
     background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px);
@@ -117,7 +114,6 @@
   .cct-sync-status.online { background: #DCFCE7; color: #15803D; }
   .cct-sync-status.local { background: #FEF3C7; color: #B45309; }
 
-  /* ---- Tabs ---- */
   .cct-tabs { display: flex; gap: 8px; padding: 10px 20px 0; background: var(--surface); border-bottom: 1px solid var(--border); }
   .cct-tab { border: none; background: none; padding: 10px 18px; font-size: 14px; font-weight: 700; color: var(--text-muted); cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; }
   .cct-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
@@ -126,7 +122,7 @@
   .cct-subtab.active { background: var(--primary); border-color: var(--primary); color: white; box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25); }
   .cct-main { padding: 18px 20px 100px; }
 
-  /* ---- Filters ---- */
+  /* FILTER BAR */
   .cct-filter-bar { display: flex; gap: 10px; margin-bottom: 14px; }
   .cct-search-box, .cct-date-box {
     display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1.5px solid var(--border);
@@ -147,7 +143,6 @@
   .cct-cat-chip.active { background: var(--chip-color, var(--primary)); color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.15); transform: translateY(-1px); }
   .cct-cat-picker { display: flex; flex-wrap: wrap; gap: 8px; }
 
-  /* ---- List / Card ---- */
   .cct-list { display: flex; flex-direction: column; gap: 14px; }
   .cct-empty { text-align: center; color: var(--text-muted); padding: 48px 0; font-size: 14px; font-weight: 500; }
   .cct-card {
@@ -174,7 +169,6 @@
   .cct-resolved-note { font-size: 12px; color: var(--text-muted); margin-top: 6px; font-weight: 500; }
   .cct-card-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 
-  /* ---- Buttons ---- */
   .cct-btn {
     display: inline-flex; align-items: center; gap: 6px; border: none; border-radius: 10px; padding: 9px 16px;
     font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s ease;
@@ -200,7 +194,6 @@
   }
   .cct-fab:hover { transform: scale(1.06) rotate(90deg); box-shadow: 0 12px 24px rgba(79, 70, 229, 0.45); }
 
-  /* ---- Modal ---- */
   .cct-modal-backdrop {
     position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5);
     backdrop-filter: blur(6px); display: flex; align-items: flex-end; justify-content: center; z-index: 100;
@@ -224,7 +217,6 @@
     color: #047857; background: #ECFDF5; border: 1px solid #A7F3D0; padding: 10px 14px; border-radius: 10px; font-size: 13px; margin-bottom: 14px; font-weight: 700; text-align: center;
   }
 
-  /* ---- Fields ---- */
   .cct-field { margin-bottom: 16px; position: relative; }
   .cct-field label { display: block; font-size: 12px; font-weight: 800; color: #475569; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.03em; }
   .cct-field input, .cct-field select, .cct-field textarea {
@@ -249,7 +241,6 @@
   .cct-autocomplete-item { padding: 11px 16px; font-size: 14px; font-weight: 500; cursor: pointer; transition: background 0.15s; }
   .cct-autocomplete-item:hover { background: var(--primary-light); color: var(--primary-dark); font-weight: 700; }
 
-  /* 快速選項按鈕群 */
   .cct-quick-chips { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
   .cct-quick-chip {
     border: 1.5px solid var(--border); background: var(--surface); border-radius: 8px; padding: 5px 12px; font-size: 12px;
@@ -257,7 +248,6 @@
   }
   .cct-quick-chip:hover { background: var(--primary-light); color: var(--primary-dark); border-color: var(--primary); }
 
-  /* 範本情境切換 Bar */
   .cct-scenario-bar { display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 4px; }
   .cct-scenario-btn {
     border: 1.5px solid var(--border); background: var(--bg); padding: 8px 14px; border-radius: 10px;
@@ -269,13 +259,9 @@
 <body>
 <div id="app"></div>
 
-<!-- 載入 Supabase JS SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
-/* ================================================================== */
-/* ☁️ Supabase 雲端資料庫設定（請貼上您的專案資訊）                    */
-/* ================================================================== */
 const SUPABASE_URL = "https://fgfdvjjrzzjavcseulpg.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnZmR2ampyenpqYXZjc2V1bHBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyNDQyODcsImV4cCI6MjEwMzgyMDI4N30.nJ7PCIJiQNUjTUK3cTtYjvdSocJU5XktP2yt-OQVOCE";
 
@@ -286,10 +272,10 @@ const STORAGE_KEY_HISTORY = "cct_history_records";
 let supabaseClient = null;
 let isCloudSynced = false;
 
-// 初始化 Supabase 連線
 if (typeof supabase !== "undefined" && SUPABASE_URL && SUPABASE_ANON_KEY) {
   try {
-    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const cleanUrl = SUPABASE_URL.replace(/\/rest\/v1\/?$/, "");
+    supabaseClient = supabase.createClient(cleanUrl, SUPABASE_ANON_KEY);
     isCloudSynced = true;
   } catch (err) {
     console.error("Supabase 連線失敗，自動切換至本機模式", err);
@@ -369,7 +355,6 @@ function getCategoryFields(category, erlianSubType = "delivery") {
 
 const CONVERT_FIELDS = getCategoryFields("zilian");
 
-/* ---- 南倉資料 ---- */
 const RAW_AREAS_SOUTH = {
   嘉義市: ["東區", "西區"],
   嘉義縣: ["番路鄉","梅山鄉","竹崎鄉","阿里山鄉","中埔鄉","大埔鄉","水上鄉","鹿草鄉","太保市","朴子市","東石鄉","六腳鄉","新港鄉","民雄鄉","大林鎮","溪口鄉","義竹鄉","布袋鎮"],
@@ -379,8 +364,6 @@ const RAW_AREAS_SOUTH = {
   台東縣: ["台東市","成功鎮","關山鎮","卑南鄉","大武鄉","太麻里鄉","東河鄉","長濱鄉","鹿野鄉","池上鄉","綠島鄉","達仁鄉","金峰鄉","海端鄉","延平鄉","蘭嶼鄉"],
 };
 const CONTACTS_SOUTH = ["Lena念臻", "Linda采陵", "Anna芊岱", "Wendy咨汶"];
-
-/* ---- 中倉資料 ---- */
 const RAW_AREAS_NORTH = RAW_AREAS_SOUTH;
 const CONTACTS_NORTH = CONTACTS_SOUTH;
 
@@ -464,8 +447,8 @@ function generateChatTemplate(record, scenario = "standard") {
       const timeText = f.scheduledTime || "";
       return `@\n客訴件編號：${f.complaintNo || ""}\n客戶姓名：${nameText}\n已排約 ${dateText} ${timeText} 回收 ${f.item || "(商品)"} 維修，\n今日二聯未接電話，再請協助通知顧客，謝謝!`;
     }
-    const dateText = f.scheduledDate ? fmtDate(f.scheduledDate) : "";
-    const etaText = f.eta || "";
+    const dateText = f.scheduledDate ? fmtDate(f.scheduledDate) : "(日期)";
+    const etaText = f.eta || "(時段)";
     return `【通知時段】 @\n訂單 :\n姓名：${nameText}\n電話：末三碼 ${record.phoneLast3}\n地址：${areaText}\n\n已約 ${dateText}，順趟路線安排 ${etaText} 間送達。\n今日二聯都未接電話，需麻煩業務端LINE協助通知時段，再請顧客留意司機當日抵達前30分鐘電聯，謝謝!`;
   }
 
@@ -527,29 +510,62 @@ async function initCloudSync() {
   }
 
   try {
-    const { data: activeData } = await supabaseClient.from('active_records').select('*');
+    const { data: activeData, error: activeErr } = await supabaseClient.from('active_records').select('*');
+    if (activeErr) throw activeErr;
     if (activeData) state.activeRecords = activeData;
 
-    const { data: historyData } = await supabaseClient.from('history_records').select('*');
+    const { data: historyData, error: historyErr } = await supabaseClient.from('history_records').select('*');
+    if (historyErr) throw historyErr;
     if (historyData) state.historyRecords = historyData;
 
     render();
 
-    // 訂閱 Supabase Realtime 即時廣播
-    supabaseClient
-      .channel('public:records')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'active_records' }, async () => {
-        const { data } = await supabaseClient.from('active_records').select('*');
-        if (data) { state.activeRecords = data; render(); }
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'history_records' }, async () => {
-        const { data } = await supabaseClient.from('history_records').select('*');
-        if (data) { state.historyRecords = data; render(); }
-      })
-      .subscribe();
+    let canUseWebSocket = false;
+    try {
+      if (typeof WebSocket !== 'undefined') {
+        const testWs = new WebSocket('wss://fgfdvjjrzzjavcseulpg.supabase.co/realtime/v1/websocket');
+        testWs.close();
+        canUseWebSocket = true;
+      }
+    } catch (wsCheckErr) {
+      console.warn("偵測到 Canvas 沙盒或受限制環境 (SecurityError)，已自動切換至 HTTP REST 輪詢同步模式");
+      canUseWebSocket = false;
+    }
+
+    if (canUseWebSocket) {
+      try {
+        supabaseClient
+          .channel('public:records')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'active_records' }, async () => {
+            const { data } = await supabaseClient.from('active_records').select('*');
+            if (data) { state.activeRecords = data; render(); }
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'history_records' }, async () => {
+            const { data } = await supabaseClient.from('history_records').select('*');
+            if (data) { state.historyRecords = data; render(); }
+          })
+          .subscribe();
+      } catch (wsErr) {
+        console.warn("WebSocket 建立失敗，切換為 HTTP 輪詢模式", wsErr);
+      }
+    }
+
+    // 定期輪詢以保證資料即時性 (每 10 秒備援刷新)
+    setInterval(async () => {
+      try {
+        const { data: aData } = await supabaseClient.from('active_records').select('*');
+        if (aData) state.activeRecords = aData;
+        const { data: hData } = await supabaseClient.from('history_records').select('*');
+        if (hData) state.historyRecords = hData;
+        render();
+      } catch (e) {
+        // 靜默處理輪詢異常
+      }
+    }, 10000);
 
   } catch (err) {
     console.error("雲端同步失敗，切換回本機模式", err);
+    isCloudSynced = false;
     loadStorage();
     render();
   }
