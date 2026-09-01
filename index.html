@@ -218,14 +218,12 @@ const ERLIAN_SUBTYPES = [
 
 const ERLIAN_FIELDS = {
   delivery: [
-    { key: "address", label: "詳細地址", type: "text" },
     { key: "plate", label: "車牌", type: "datalist", options: PLATE_OPTIONS },
     { key: "eta", label: "預計抵達時間/配送時段", type: "text" },
     { key: "balance", label: "尾款", type: "checkbox" },
     { key: "note", label: "備註", type: "textarea" },
   ],
   rail: [
-    { key: "address", label: "詳細地址", type: "text" },
     { key: "scheduledDate", label: "預約升級日期", type: "date" },
     { key: "cabinetSize", label: "餐邊櫃電軌尺寸(cm)", type: "text" },
     { key: "note", label: "備註", type: "textarea" },
@@ -247,7 +245,6 @@ const CATEGORY_FIELDS = {
     { key: "note", label: "備註", type: "textarea" },
   ],
   complaint: [
-    { key: "orderNumber", label: "訂單編號", type: "text" },
     { key: "item", label: "客訴品項", type: "text" },
     { key: "availableTrips", label: "目前可提供車趟", type: "text" },
     { key: "holdUntil", label: "車趟保留至", type: "date" },
