@@ -568,6 +568,32 @@ function openChatBiz(id) {
   render();
 }
 
+function closeChatBiz() {
+  state.chatTarget = null;
+  state.chatText = "";
+  state.copySuccess = false;
+  render();
+}
+
+function switchChatScenario(sc) {
+  state.chatScenario = sc;
+  if (state.chatTarget) {
+    state.chatText = generateChatTemplate(state.chatTarget, sc);
+  }
+  state.copySuccess = false;
+  render();
+}
+
+function doCopyChat() {
+  const chatTextArea = document.getElementById("chatTextArea");
+  if (chatTextArea) {
+    state.chatText = chatTextArea.value;
+  }
+  copyToClipboard(state.chatText);
+  state.copySuccess = true;
+  render();
+}
+
 function markDone(id) {
   const record = state.activeRecords.find(r => r.id === id);
   if (!record) return;
