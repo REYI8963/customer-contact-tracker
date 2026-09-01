@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>客服快速聯絡網（本機測試版）</title>
+<title>MR.LIVING倉儲客服系統</title>
 <style>
   * { box-sizing: border-box; }
   html, body {
@@ -298,7 +298,7 @@ const ERLIAN_FIELDS = {
   ],
   rail: [
     { key: "scheduledDate", label: "預約升級日期", type: "date" },
-    { key: "cabinetSize", label: "餐邊櫃電軌尺寸(cm)", type: "text" },
+    { key: "eta", label: "安排時段", type: "text" },
     { key: "note", label: "備註", type: "textarea" },
   ],
   complaint: [
@@ -312,7 +312,6 @@ const ERLIAN_FIELDS = {
 const CATEGORY_FIELDS = {
   approve: [
     { key: "orderNumber", label: "訂單編號", type: "text" },
-    { key: "appointmentDate", label: "目前可約配日期", type: "date" },
     { key: "availableTrips", label: "目前可提供車趟", type: "text" },
     { key: "holdUntil", label: "車趟保留至", type: "date" },
     { key: "note", label: "備註", type: "textarea" },
@@ -750,7 +749,7 @@ function renderLogin() {
     <div class="cct-login-screen">
       <div class="cct-login-card">
         <div class="cct-logo">CCT</div>
-        <h1>客服快速聯絡網</h1>
+        <h1>MR.LIVING倉儲客服系統</h1>
         <p class="cct-login-sub">請選擇倉別並輸入密碼</p>
         <div class="cct-wh-picker">
           <button type="button" class="cct-wh-btn ${state.loginPickWarehouse==='south'?'active':''}" data-act="pick-wh" data-wh="south">南倉</button>
@@ -776,7 +775,7 @@ function renderMain() {
       <div class="cct-header-left">
         <div class="cct-logo cct-logo-sm">CCT</div>
         <div>
-          <div class="cct-header-title">客服快速聯絡網</div>
+          <div class="cct-header-title">MR.LIVING倉儲客服系統</div>
           <div class="cct-header-sub">${esc(wh.name)}（本機測試版）</div>
         </div>
       </div>
