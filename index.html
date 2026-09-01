@@ -282,14 +282,13 @@ if (typeof supabase !== "undefined" && SUPABASE_URL && SUPABASE_ANON_KEY) {
   }
 }
 
-function toDbRecord(r) {
-  return {
+function toDbRecord(r, isHistory = false) {
+  const rec = {
     id: r.id,
     warehouse: r.warehouse,
     category: r.category,
     erliansubtype: r.erlianSubType || r.erliansubtype || "delivery",
     createdat: r.createdAt || r.createdat || new Date().toISOString(),
-    resolvedat: r.resolvedAt || r.resolvedat || null,
     phonelast3: r.phoneLast3 || r.phonelast3 || "",
     lastname: r.lastName || r.lastname || "",
     gender: r.gender || "先生",
@@ -298,6 +297,10 @@ function toDbRecord(r) {
     fields: r.fields || {},
     updatedat: r.updatedAt || r.updatedat || new Date().toISOString()
   };
+  if (isHistory) {
+    rec.resolvedat = r.resolvedAt || r.resolvedat || new Date().toISOString();
+  }
+  return rec;
 }
 
 function fromDbRecord(r) {
@@ -656,7 +659,7 @@ async function saveAdd() {
 
   if (isCloudSynced && supabaseClient) {
     try {
-      const { error } = await supabaseClient.from('active_records').insert([toDbRecord(record)]);
+      const { error } = await supabaseClient.from('active_records').insert([toDbRecord(record, false)]);
       if (error) console.error("Cloud save error:", error);
     } catch (e) { console.error("Cloud save failed:", e); }
   }
@@ -699,6 +702,7 @@ async function saveEdit() {
     updatedAt: new Date().toISOString(),
   };
 
+  const isHist = state.editType !== "active";
   if (state.editType === "active") {
     const idx = state.activeRecords.findIndex(r => r.id === f.id);
     if (idx !== -1) {
@@ -716,9 +720,9 @@ async function saveEdit() {
 
   if (isCloudSynced && supabaseClient) {
     try {
-      const table = state.editType === "active" ? 'active_records' : 'history_records';
+      const table = isHist ? 'history_records' : 'active_records';
       const fullRecord = { ...state.editForm, ...updatedRecord };
-      const { error } = await supabaseClient.from(table).update(toDbRecord(fullRecord)).eq('id', f.id);
+      const { error } = await supabaseClient.from(table).update(toDbRecord(fullRecord, isHist)).eq('id', f.id);
       if (error) console.error("Cloud update error:", error);
     } catch (e) { console.error("Cloud update failed:", e); }
   }
@@ -780,7 +784,7 @@ async function markDone(id) {
     try {
       await supabaseClient.from('active_records').delete().eq('id', id);
       if (record.category === "zilian") {
-        await supabaseClient.from('history_records').insert([toDbRecord({ ...record, resolvedAt: new Date().toISOString() })]);
+        await supabaseClient.from('history_records').insert([toDbRecord({ ...record, resolvedAt: new Date().toISOString() }, true)]);
       }
     } catch (e) { console.error("Cloud mark done failed:", e); }
   }
@@ -813,7 +817,7 @@ async function confirmConvert() {
   if (isCloudSynced && supabaseClient) {
     try {
       await supabaseClient.from('active_records').delete().eq('id', record.id);
-      await supabaseClient.from('active_records').insert([toDbRecord(converted)]);
+      await supabaseClient.from('active_records').insert([toDbRecord(converted, false)]);
     } catch (e) { console.error("Cloud convert failed:", e); }
   }
 }
