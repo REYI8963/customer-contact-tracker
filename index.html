@@ -540,6 +540,10 @@ function saveHistoryLocal() {
   try { localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(state.historyRecords)); } catch (e) {}
 }
 
+function isModalOpen() {
+  return !!(state.showAdd || state.editTarget || state.convertTarget || state.chatTarget);
+}
+
 async function fetchCloudData(silent = false) {
   if (!supabaseClient) return;
   try {
@@ -551,6 +555,9 @@ async function fetchCloudData(silent = false) {
 
     if (!silent) render();
     else {
+      // 只要有任何對話框 (Modal) 開啟中，背景同步時絕不重新渲染頁面，徹底防止對話框閃退或輸入失焦
+      if (isModalOpen()) return;
+
       const activeEl = document.activeElement;
       if (!activeEl || (activeEl.tagName !== 'INPUT' && activeEl.tagName !== 'TEXTAREA')) {
         render();
@@ -597,8 +604,8 @@ async function initCloudSync() {
     try {
       supabaseClient
         .channel('public:records')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'active_records' }, () => fetchCloudData(true))
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'history_records' }, () => fetchCloudData(true))
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'active_records' }, () => { if (!isModalOpen()) fetchCloudData(true); })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'history_records' }, () => { if (!isModalOpen()) fetchCloudData(true); })
         .subscribe((status, err) => {
           if (err) console.warn("Supabase Realtime 訂閱狀態:", status, err);
         });
