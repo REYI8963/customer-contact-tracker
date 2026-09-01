@@ -282,6 +282,43 @@ if (typeof supabase !== "undefined" && SUPABASE_URL && SUPABASE_ANON_KEY) {
   }
 }
 
+function toDbRecord(r) {
+  return {
+    id: r.id,
+    warehouse: r.warehouse,
+    category: r.category,
+    erliansubtype: r.erlianSubType || r.erliansubtype || "delivery",
+    createdat: r.createdAt || r.createdat || new Date().toISOString(),
+    resolvedat: r.resolvedAt || r.resolvedat || null,
+    phonelast3: r.phoneLast3 || r.phonelast3 || "",
+    lastname: r.lastName || r.lastname || "",
+    gender: r.gender || "先生",
+    area: r.area || "",
+    contact: r.contact || "",
+    fields: r.fields || {},
+    updatedat: r.updatedAt || r.updatedat || new Date().toISOString()
+  };
+}
+
+function fromDbRecord(r) {
+  if (!r) return null;
+  return {
+    id: r.id,
+    warehouse: r.warehouse,
+    category: r.category,
+    erlianSubType: r.erlianSubType || r.erliansubtype || "delivery",
+    createdAt: r.createdAt || r.createdat,
+    resolvedAt: r.resolvedAt || r.resolvedat,
+    phoneLast3: r.phoneLast3 || r.phonelast3 || "",
+    lastName: r.lastName || r.lastname || "",
+    gender: r.gender || "先生",
+    area: r.area || "",
+    contact: r.contact || "",
+    fields: r.fields || {},
+    updatedAt: r.updatedAt || r.updatedat
+  };
+}
+
 const CATEGORIES = [
   { id: "approve", label: "約配未接", color: "#4F46E5" },
   { id: "erlian", label: "二聯未接", color: "#D97706" },
@@ -504,10 +541,10 @@ async function fetchCloudData(silent = false) {
   if (!supabaseClient) return;
   try {
     const { data: aData, error: aErr } = await supabaseClient.from('active_records').select('*');
-    if (!aErr && aData) state.activeRecords = aData;
+    if (!aErr && aData) state.activeRecords = aData.map(fromDbRecord);
 
     const { data: hData, error: hErr } = await supabaseClient.from('history_records').select('*');
-    if (!hErr && hData) state.historyRecords = hData;
+    if (!hErr && hData) state.historyRecords = hData.map(fromDbRecord);
 
     if (!silent) render();
     else {
@@ -619,7 +656,8 @@ async function saveAdd() {
 
   if (isCloudSynced && supabaseClient) {
     try {
-      await supabaseClient.from('active_records').insert([record]);
+      const { error } = await supabaseClient.from('active_records').insert([toDbRecord(record)]);
+      if (error) console.error("Cloud save error:", error);
     } catch (e) { console.error("Cloud save failed:", e); }
   }
 }
@@ -679,7 +717,9 @@ async function saveEdit() {
   if (isCloudSynced && supabaseClient) {
     try {
       const table = state.editType === "active" ? 'active_records' : 'history_records';
-      await supabaseClient.from(table).update(updatedRecord).eq('id', f.id);
+      const fullRecord = { ...state.editForm, ...updatedRecord };
+      const { error } = await supabaseClient.from(table).update(toDbRecord(fullRecord)).eq('id', f.id);
+      if (error) console.error("Cloud update error:", error);
     } catch (e) { console.error("Cloud update failed:", e); }
   }
 }
@@ -740,7 +780,7 @@ async function markDone(id) {
     try {
       await supabaseClient.from('active_records').delete().eq('id', id);
       if (record.category === "zilian") {
-        await supabaseClient.from('history_records').insert([{ ...record, resolvedAt: new Date().toISOString() }]);
+        await supabaseClient.from('history_records').insert([toDbRecord({ ...record, resolvedAt: new Date().toISOString() })]);
       }
     } catch (e) { console.error("Cloud mark done failed:", e); }
   }
@@ -773,7 +813,7 @@ async function confirmConvert() {
   if (isCloudSynced && supabaseClient) {
     try {
       await supabaseClient.from('active_records').delete().eq('id', record.id);
-      await supabaseClient.from('active_records').insert([converted]);
+      await supabaseClient.from('active_records').insert([toDbRecord(converted)]);
     } catch (e) { console.error("Cloud convert failed:", e); }
   }
 }
