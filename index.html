@@ -9,202 +9,274 @@
   html, body {
     margin: 0; padding: 0;
     font-family: "Noto Sans TC", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    background: #F7F5F1;
-    color: #2B2B2E;
+    background: #F1F5F9;
+    color: #0F172A;
   }
   :root {
-    --bg: #F7F5F1;
+    --bg: #F1F5F9;
     --surface: #FFFFFF;
-    --text: #2B2B2E;
-    --text-muted: #7A7A80;
-    --border: #E4E1DA;
-    --primary: #7C93A3;
-    --primary-dark: #5C7385;
-    --danger: #B96B6B;
+    --text: #0F172A;
+    --text-muted: #64748B;
+    --border: #E2E8F0;
+    --primary: #4F46E5;
+    --primary-dark: #4338CA;
+    --primary-light: #EEF2FF;
+    --danger: #EF4444;
+    --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.04);
+    --shadow-md: 0 10px 25px -5px rgba(15, 23, 42, 0.08);
   }
   #app {
-    max-width: 640px;
+    max-width: 840px;
     margin: 0 auto;
     min-height: 100vh;
     position: relative;
     letter-spacing: 0.01em;
   }
 
+  /* ---- Dashboard KPI 統計儀表板 ---- */
+  .cct-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  @media (max-width: 500px) {
+    .cct-stats-grid { grid-template-columns: 1fr; gap: 8px; }
+  }
+  .cct-stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px 16px;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .cct-stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  .cct-stat-info { display: flex; flex-direction: column; }
+  .cct-stat-label { font-size: 12px; color: var(--text-muted); font-weight: 700; margin-bottom: 2px; }
+  .cct-stat-num { font-size: 22px; font-weight: 800; color: #0F172A; line-height: 1.2; }
+  .cct-stat-icon {
+    width: 42px; height: 42px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+  }
+  .cct-stat-icon.primary { background: #EEF2FF; color: #4F46E5; }
+  .cct-stat-icon.warning { background: #FFF7ED; color: #EA580C; }
+  .cct-stat-icon.success { background: #ECFDF5; color: #059669; }
+
   /* ---- 登入畫面 ---- */
   .cct-login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
   .cct-login-card {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
-    padding: 40px 32px; width: 100%; max-width: 340px; text-align: center;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+    padding: 40px 32px; width: 100%; max-width: 360px; text-align: center;
+    box-shadow: var(--shadow-md);
   }
   .cct-logo {
-    width: 48px; height: 48px; border-radius: 12px; background: var(--text); color: var(--bg);
-    display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px;
+    width: 52px; height: 52px; border-radius: 16px; 
+    background: linear-gradient(135deg, #4F46E5 0%, #3B82F6 100%); 
+    color: white;
+    display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px;
     letter-spacing: 0.08em; margin: 0 auto 20px;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
   }
-  .cct-logo-sm { width: 36px; height: 36px; font-size: 11px; margin: 0; }
-  .cct-login-card h1 { font-size: 18px; margin: 0 0 4px; font-weight: 700; }
-  .cct-login-sub { color: var(--text-muted); font-size: 13px; margin: 0 0 20px; }
-  .cct-wh-picker { display: flex; gap: 8px; margin-bottom: 16px; }
+  .cct-logo-sm { width: 38px; height: 38px; font-size: 12px; margin: 0; border-radius: 12px; }
+  .cct-login-card h1 { font-size: 20px; margin: 0 0 4px; font-weight: 700; color: #0F172A; }
+  .cct-login-sub { color: var(--text-muted); font-size: 13px; margin: 0 0 24px; }
+  .cct-wh-picker { display: flex; gap: 10px; margin-bottom: 20px; }
   .cct-wh-btn {
-    flex: 1; padding: 12px; border: 1.5px solid var(--border); border-radius: 10px;
-    background: var(--bg); font-size: 14px; font-weight: 600; color: var(--text-muted); cursor: pointer;
+    flex: 1; padding: 12px; border: 1.5px solid var(--border); border-radius: 12px;
+    background: var(--bg); font-size: 14px; font-weight: 700; color: var(--text-muted); cursor: pointer;
+    transition: all 0.2s ease;
   }
-  .cct-wh-btn.active { background: var(--primary); border-color: var(--primary); color: white; }
+  .cct-wh-btn.active {
+    background: var(--primary-light); border-color: var(--primary); color: var(--primary);
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.15);
+  }
   .cct-login-card input {
-    width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px;
-    font-size: 15px; margin-bottom: 12px; background: var(--bg); color: var(--text);
+    width: 100%; padding: 12px 16px; border: 1.5px solid var(--border); border-radius: 12px;
+    font-size: 15px; margin-bottom: 14px; background: var(--bg); color: var(--text);
+    transition: all 0.2s ease;
   }
-  .cct-login-card input:focus { outline: none; border-color: var(--primary); }
-  .cct-login-error { color: var(--danger); font-size: 13px; margin-bottom: 12px; text-align: left; }
+  .cct-login-card input:focus { outline: none; border-color: var(--primary); background: #FFFFFF; }
+  .cct-login-error { color: var(--danger); font-size: 13px; margin-bottom: 12px; text-align: left; font-weight: 600; }
   .cct-login-btn { width: 100%; justify-content: center; }
 
   /* ---- Header ---- */
   .cct-header {
     display: flex; align-items: center; justify-content: space-between; padding: 16px 20px;
-    background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10;
+    background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10;
   }
   .cct-header-left { display: flex; align-items: center; gap: 12px; }
-  .cct-header-title { font-weight: 700; font-size: 15px; }
-  .cct-header-sub { font-size: 12px; color: var(--text-muted); }
+  .cct-header-title { font-weight: 800; font-size: 16px; color: #0F172A; }
+  .cct-header-sub { font-size: 12px; color: var(--primary); font-weight: 600; background: var(--primary-light); padding: 2px 8px; border-radius: 6px; display: inline-block; }
 
   /* ---- Tabs ---- */
-  .cct-tabs { display: flex; gap: 4px; padding: 10px 20px 0; background: var(--surface); border-bottom: 1px solid var(--border); }
-  .cct-tab { border: none; background: none; padding: 10px 16px; font-size: 14px; font-weight: 600; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; }
-  .cct-tab.active { color: var(--primary-dark); border-bottom-color: var(--primary); }
-  .cct-subtabs { display: flex; gap: 8px; margin-bottom: 12px; }
-  .cct-subtab { border: 1px solid var(--border); background: var(--surface); padding: 6px 14px; border-radius: 999px; font-size: 13px; cursor: pointer; color: var(--text-muted); }
-  .cct-subtab.active { background: var(--primary); border-color: var(--primary); color: white; }
-  .cct-main { padding: 16px 20px 100px; }
-  .cct-error-banner { background: #F6E8E8; color: var(--danger); padding: 8px 20px; font-size: 13px; }
+  .cct-tabs { display: flex; gap: 8px; padding: 10px 20px 0; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .cct-tab { border: none; background: none; padding: 10px 18px; font-size: 14px; font-weight: 700; color: var(--text-muted); cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; }
+  .cct-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+  .cct-subtabs { display: flex; gap: 8px; margin-bottom: 14px; }
+  .cct-subtab { border: 1.5px solid var(--border); background: var(--surface); padding: 7px 16px; border-radius: 999px; font-size: 13px; font-weight: 700; cursor: pointer; color: var(--text-muted); transition: all 0.2s; }
+  .cct-subtab.active { background: var(--primary); border-color: var(--primary); color: white; box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25); }
+  .cct-main { padding: 18px 20px 100px; }
 
   /* ---- Filters ---- */
-  .cct-filter-bar { display: flex; gap: 10px; margin-bottom: 12px; }
+  .cct-filter-bar { display: flex; gap: 10px; margin-bottom: 14px; }
   .cct-search-box, .cct-date-box {
-    display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border);
-    border-radius: 10px; padding: 9px 12px; color: var(--text-muted); flex: 1;
+    display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 12px; padding: 10px 14px; color: var(--text-muted); flex: 1; box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
   }
-  .cct-search-wide { margin-bottom: 12px; }
-  .cct-search-box input, .cct-date-box input { border: none; outline: none; background: none; font-size: 14px; color: var(--text); width: 100%; }
+  .cct-search-box:focus-within, .cct-date-box:focus-within { border-color: var(--primary); background: #FFFFFF; }
+  .cct-search-wide { margin-bottom: 14px; }
+  .cct-search-box input, .cct-date-box input { border: none; outline: none; background: none; font-size: 14px; font-weight: 500; color: var(--text); width: 100%; }
   .cct-date-box { flex: 1.2; position: relative; }
-  .cct-clear-date { border: none; background: none; cursor: pointer; color: var(--text-muted); padding: 0; }
-  .cct-cat-filter { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .cct-clear-date { border: none; background: none; cursor: pointer; color: var(--text-muted); padding: 0; font-weight: 700; }
+  .cct-cat-filter { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
   .cct-cat-chip {
     border: 1.5px solid var(--chip-color, var(--border)); background: var(--surface); color: var(--chip-color, var(--text));
-    padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 600; cursor: pointer;
+    padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s ease;
+    box-shadow: var(--shadow-sm);
   }
-  .cct-cat-chip.active { background: var(--chip-color, var(--primary)); color: white; }
+  .cct-cat-chip.active { background: var(--chip-color, var(--primary)); color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.15); transform: translateY(-1px); }
   .cct-cat-picker { display: flex; flex-wrap: wrap; gap: 8px; }
 
   /* ---- List / Card ---- */
-  .cct-list { display: flex; flex-direction: column; gap: 12px; }
-  .cct-loading, .cct-empty { text-align: center; color: var(--text-muted); padding: 40px 0; font-size: 14px; }
-  .cct-card { display: flex; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
-  .cct-card-bar { width: 5px; background: var(--cat-color); flex-shrink: 0; }
-  .cct-card-body { padding: 14px 16px; flex: 1; }
+  .cct-list { display: flex; flex-direction: column; gap: 14px; }
+  .cct-empty { text-align: center; color: var(--text-muted); padding: 48px 0; font-size: 14px; font-weight: 500; }
+  .cct-card {
+    display: flex; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden;
+    box-shadow: var(--shadow-sm); transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .cct-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  .cct-card-bar { width: 6px; background: var(--cat-color); flex-shrink: 0; }
+  .cct-card-body { padding: 16px 18px; flex: 1; }
   .cct-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-  .cct-tag { color: white; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
-  .cct-card-time { font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; }
-  .cct-age-badge { background: #F3E3D3; color: #9A6B34; font-weight: 700; padding: 2px 8px; border-radius: 999px; margin-left: 6px; }
-  .cct-card-main { display: flex; flex-wrap: wrap; gap: 10px 16px; font-size: 14px; margin-bottom: 8px; }
-  .cct-phone { font-weight: 700; }
-  .cct-name { font-weight: 600; }
-  .cct-area, .cct-contact { color: var(--text-muted); }
-  .cct-card-extra { display: flex; flex-direction: column; gap: 4px; background: var(--bg); border-radius: 8px; padding: 8px 10px; margin-bottom: 10px; }
+  .cct-tag { color: white; font-size: 12px; font-weight: 800; padding: 3px 12px; border-radius: 999px; letter-spacing: 0.02em; }
+  .cct-card-time { font-size: 12px; color: var(--text-muted); font-weight: 600; display: flex; align-items: center; gap: 4px; }
+  .cct-age-badge { background: #FFF7ED; color: #C2410C; border: 1px solid #FFEDD5; font-weight: 800; padding: 2px 10px; border-radius: 999px; margin-left: 6px; font-size: 11px; }
+  .cct-card-main { display: flex; flex-wrap: wrap; gap: 10px 18px; font-size: 14px; margin-bottom: 10px; align-items: center; }
+  .cct-phone { font-weight: 800; color: #0F172A; font-size: 15px; }
+  .cct-name { font-weight: 700; color: #334155; }
+  .cct-area { color: var(--primary-dark); font-weight: 600; background: var(--primary-light); padding: 2px 8px; border-radius: 6px; font-size: 12px; }
+  .cct-contact { color: var(--text-muted); font-weight: 500; font-size: 13px; }
+  .cct-card-extra { display: flex; flex-direction: column; gap: 6px; background: #F8FAFC; border: 1px solid #F1F5F9; border-radius: 12px; padding: 10px 12px; margin-bottom: 12px; }
   .cct-extra-item { display: flex; gap: 8px; font-size: 13px; }
-  .cct-extra-label { color: var(--text-muted); flex-shrink: 0; }
-  .cct-extra-value { color: var(--text); font-weight: 500; word-break: break-word; }
-  .cct-balance-badge { display: inline-flex; align-items: center; gap: 4px; background: #E8EEF1; color: var(--primary-dark); font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; width: fit-content; }
-  .cct-resolved-note { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
-  .cct-card-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .cct-extra-label { color: var(--text-muted); flex-shrink: 0; font-weight: 600; }
+  .cct-extra-value { color: #1E293B; font-weight: 600; word-break: break-word; }
+  .cct-balance-badge { display: inline-flex; align-items: center; gap: 4px; background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-size: 12px; font-weight: 800; padding: 3px 10px; border-radius: 999px; width: fit-content; }
+  .cct-resolved-note { font-size: 12px; color: var(--text-muted); margin-top: 6px; font-weight: 500; }
+  .cct-card-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 
   /* ---- Buttons ---- */
-  .cct-btn { display: inline-flex; align-items: center; gap: 6px; border: none; border-radius: 10px; padding: 9px 16px; font-size: 13px; font-weight: 600; cursor: pointer; }
-  .cct-btn-primary { background: var(--primary); color: white; }
-  .cct-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-  .cct-btn-outline { background: var(--surface); border: 1px solid var(--border); color: var(--text); }
+  .cct-btn {
+    display: inline-flex; align-items: center; gap: 6px; border: none; border-radius: 10px; padding: 9px 16px;
+    font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s ease;
+  }
+  .cct-btn-primary {
+    background: linear-gradient(135deg, #4F46E5 0%, #3B82F6 100%); color: white;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+  }
+  .cct-btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(79, 70, 229, 0.35); }
+  .cct-btn-outline { background: var(--surface); border: 1.5px solid var(--border); color: #334155; }
+  .cct-btn-outline:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
   .cct-btn-ghost { background: none; color: var(--text-muted); }
-  .cct-icon-btn { border: none; background: none; cursor: pointer; color: var(--text-muted); padding: 6px; border-radius: 8px; }
+  .cct-btn-ghost:hover { color: var(--text); }
+  .cct-icon-btn { border: none; background: none; cursor: pointer; color: var(--text-muted); padding: 8px; border-radius: 10px; font-weight: 700; transition: all 0.2s; }
+  .cct-icon-btn:hover { background: var(--border); color: var(--text); }
 
   .cct-fab {
-    position: fixed; bottom: 24px; right: 24px; width: 56px; height: 56px; border-radius: 50%;
-    background: var(--primary); color: white; border: none; display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 4px 14px rgba(92, 115, 133, 0.4); cursor: pointer; font-size: 26px; line-height: 1;
+    position: fixed; bottom: 28px; right: 28px; width: 60px; height: 60px; border-radius: 50%;
+    background: linear-gradient(135deg, #4F46E5 0%, #06B6D4 100%); color: white; border: none;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 8px 20px rgba(79, 70, 229, 0.35); cursor: pointer; font-size: 28px; line-height: 1;
+    transition: transform 0.2s ease, box-shadow 0.2s ease; z-index: 50;
   }
+  .cct-fab:hover { transform: scale(1.06) rotate(90deg); box-shadow: 0 12px 24px rgba(79, 70, 229, 0.45); }
 
   /* ---- Modal ---- */
-  .cct-modal-backdrop { position: fixed; inset: 0; background: rgba(43,43,46,0.4); display: flex; align-items: flex-end; justify-content: center; z-index: 100; }
-  .cct-modal { background: var(--surface); width: 100%; max-width: 480px; max-height: 88vh; border-radius: 20px 20px 0 0; display: flex; flex-direction: column; overflow: hidden; }
-  @media (min-width: 640px) { .cct-modal-backdrop { align-items: center; } .cct-modal { border-radius: 20px; max-height: 80vh; } }
-  .cct-modal-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; border-bottom: 1px solid var(--border); }
-  .cct-modal-header h2 { font-size: 16px; margin: 0; }
-  .cct-modal-body { padding: 18px 20px; overflow-y: auto; flex: 1; }
-  .cct-modal-footer { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 20px; border-top: 1px solid var(--border); }
-  .cct-hint { font-size: 13px; color: var(--text-muted); margin: 0 0 16px; line-height: 1.6; }
+  .cct-modal-backdrop {
+    position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5);
+    backdrop-filter: blur(6px); display: flex; align-items: flex-end; justify-content: center; z-index: 100;
+  }
+  .cct-modal {
+    background: var(--surface); width: 100%; max-width: 500px; max-height: 90vh;
+    border-radius: 24px 24px 0 0; display: flex; flex-direction: column; overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.2); animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  @media (min-width: 640px) {
+    .cct-modal-backdrop { align-items: center; }
+    .cct-modal { border-radius: 24px; max-height: 85vh; }
+  }
+  .cct-modal-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; border-bottom: 1px solid var(--border); background: #FAFBFD; }
+  .cct-modal-header h2 { font-size: 17px; margin: 0; font-weight: 800; color: #0F172A; }
+  .cct-modal-body { padding: 20px 24px; overflow-y: auto; flex: 1; }
+  .cct-modal-footer { display: flex; justify-content: flex-end; gap: 12px; padding: 16px 24px; border-top: 1px solid var(--border); background: #FAFBFD; }
+  .cct-hint { font-size: 13px; color: var(--text-muted); margin: 0 0 16px; line-height: 1.6; font-weight: 500; }
   .cct-toast {
-    color: #2E7D32; background: #E8F5E9; padding: 8px 12px; border-radius: 8px; font-size: 13px; margin-bottom: 12px; font-weight: 600; text-align: center;
+    color: #047857; background: #ECFDF5; border: 1px solid #A7F3D0; padding: 10px 14px; border-radius: 10px; font-size: 13px; margin-bottom: 14px; font-weight: 700; text-align: center;
   }
 
   /* ---- Fields ---- */
-  .cct-field { margin-bottom: 14px; position: relative; }
-  .cct-field label { display: block; font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; }
+  .cct-field { margin-bottom: 16px; position: relative; }
+  .cct-field label { display: block; font-size: 12px; font-weight: 800; color: #475569; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.03em; }
   .cct-field input, .cct-field select, .cct-field textarea {
-    width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px;
-    background: var(--bg); color: var(--text); font-family: inherit;
+    width: 100%; padding: 11px 14px; border: 1.5px solid var(--border); border-radius: 12px; font-size: 14px;
+    background: #F8FAFC; color: var(--text); font-family: inherit; font-weight: 500; transition: all 0.2s;
   }
   .cct-field textarea { resize: vertical; }
-  .cct-field input:focus, .cct-field select:focus, .cct-field textarea:focus { outline: none; border-color: var(--primary); }
+  .cct-field input:focus, .cct-field select:focus, .cct-field textarea:focus { outline: none; border-color: var(--primary); background: #FFFFFF; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
   .cct-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .cct-divider { height: 1px; background: var(--border); margin: 4px 0 16px; }
-  .cct-toggle { display: flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
-  .cct-toggle-btn { flex: 1; border: none; background: var(--bg); padding: 10px; font-size: 13px; cursor: pointer; color: var(--text-muted); }
-  .cct-toggle-btn.active { background: var(--primary); color: white; }
-  .cct-checkbox { display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); background: var(--bg); border-radius: 10px; padding: 10px 12px; font-size: 14px; color: var(--text-muted); cursor: pointer; width: 100%; }
-  .cct-checkbox.checked { color: var(--text); border-color: var(--primary); }
-  .cct-checkbox-box { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; font-size: 12px; }
+  .cct-divider { height: 1px; background: var(--border); margin: 8px 0 18px; }
+  .cct-toggle { display: flex; border: 1.5px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--bg); padding: 2px; }
+  .cct-toggle-btn { flex: 1; border: none; background: transparent; padding: 9px; font-size: 13px; font-weight: 700; cursor: pointer; color: var(--text-muted); border-radius: 10px; transition: all 0.2s; }
+  .cct-toggle-btn.active { background: var(--primary); color: white; box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25); }
+  .cct-checkbox { display: flex; align-items: center; gap: 10px; border: 1.5px solid var(--border); background: #F8FAFC; border-radius: 12px; padding: 11px 14px; font-size: 14px; font-weight: 600; color: var(--text-muted); cursor: pointer; width: 100%; transition: all 0.2s; }
+  .cct-checkbox.checked { color: var(--primary-dark); border-color: var(--primary); background: var(--primary-light); }
+  .cct-checkbox-box { width: 20px; height: 20px; border-radius: 6px; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; font-size: 12px; font-weight: 800; }
   .cct-checkbox.checked .cct-checkbox-box { background: var(--primary); border-color: var(--primary); }
   .cct-autocomplete {
-    position: absolute; top: 100%; left: 0; right: 0; background: var(--surface); border: 1px solid var(--border);
-    border-radius: 10px; margin-top: 4px; max-height: 200px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.08); z-index: 20;
+    position: absolute; top: 100%; left: 0; right: 0; background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 12px; margin-top: 6px; max-height: 200px; overflow-y: auto; box-shadow: var(--shadow-md); z-index: 20;
   }
-  .cct-autocomplete-item { padding: 10px 14px; font-size: 14px; cursor: pointer; }
-  .cct-autocomplete-item:hover { background: var(--bg); }
+  .cct-autocomplete-item { padding: 11px 16px; font-size: 14px; font-weight: 500; cursor: pointer; transition: background 0.15s; }
+  .cct-autocomplete-item:hover { background: var(--primary-light); color: var(--primary-dark); font-weight: 700; }
 
   /* 快速選項按鈕群 */
-  .cct-quick-chips { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+  .cct-quick-chips { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
   .cct-quick-chip {
-    border: 1px solid var(--border); background: var(--bg); border-radius: 6px; padding: 4px 9px; font-size: 12px;
-    cursor: pointer; color: var(--text-muted); font-weight: 500;
+    border: 1.5px solid var(--border); background: var(--surface); border-radius: 8px; padding: 5px 12px; font-size: 12px;
+    cursor: pointer; color: var(--text-muted); font-weight: 700; transition: all 0.2s;
   }
-  .cct-quick-chip:hover { background: var(--surface); color: var(--text); border-color: var(--primary); }
+  .cct-quick-chip:hover { background: var(--primary-light); color: var(--primary-dark); border-color: var(--primary); }
 
   /* 範本情境切換 Tab */
-  .cct-scenario-bar { display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; padding-bottom: 4px; }
+  .cct-scenario-bar { display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 4px; }
   .cct-scenario-btn {
-    border: 1px solid var(--border); background: var(--bg); padding: 6px 12px; border-radius: 8px;
-    font-size: 12px; font-weight: 600; color: var(--text-muted); cursor: pointer; white-space: nowrap;
+    border: 1.5px solid var(--border); background: var(--bg); padding: 8px 14px; border-radius: 10px;
+    font-size: 12px; font-weight: 700; color: var(--text-muted); cursor: pointer; white-space: nowrap; transition: all 0.2s;
   }
-  .cct-scenario-btn.active { background: var(--primary); border-color: var(--primary); color: white; }
+  .cct-scenario-btn.active { background: var(--primary); border-color: var(--primary); color: white; box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25); }
 </style>
 </head>
 <body>
 <div id="app"></div>
 
 <script>
-/* ================================================================== */
-/* 常數設定                                                            */
-/* ================================================================== */
-
 const LOGIN_PASSWORD = "65905937"; // 南倉／中倉共用
 const STORAGE_KEY_ACTIVE = "cct_active_records";
 const STORAGE_KEY_HISTORY = "cct_history_records";
 
 const CATEGORIES = [
-  { id: "approve", label: "約配未接", color: "#7C93A3" },
-  { id: "erlian", label: "二聯未接", color: "#C99B6A" },
-  { id: "complaint", label: "客訴未接", color: "#B96B6B" },
-  { id: "zilian", label: "轉自聯", color: "#8B7FA8" },
-  { id: "other", label: "其他", color: "#9B9B93" },
+  { id: "approve", label: "約配未接", color: "#2563EB" },
+  { id: "erlian", label: "二聯未接", color: "#D97706" },
+  { id: "complaint", label: "客訴未接", color: "#DC2626" },
+  { id: "zilian", label: "轉自聯", color: "#7C3AED" },
+  { id: "other", label: "其他", color: "#475569" },
 ];
 const CAT_MAP = Object.fromEntries(CATEGORIES.map(c => [c.id, c]));
 
@@ -219,7 +291,8 @@ const ERLIAN_SUBTYPES = [
 const ERLIAN_FIELDS = {
   delivery: [
     { key: "plate", label: "車牌", type: "datalist", options: PLATE_OPTIONS },
-    { key: "eta", label: "預計抵達時間/配送時段", type: "text" },
+    { key: "scheduledDate", label: "約定配送日期", type: "date" },
+    { key: "eta", label: "配送時段", type: "text" },
     { key: "balance", label: "尾款", type: "checkbox" },
     { key: "note", label: "備註", type: "textarea" },
   ],
@@ -268,7 +341,6 @@ function getCategoryFields(category, erlianSubType) {
 
 const CONVERT_FIELDS = CATEGORY_FIELDS.zilian;
 
-/* ---- 南倉資料 ---- */
 const RAW_AREAS_SOUTH = {
   嘉義市: ["東區", "西區"],
   嘉義縣: ["番路鄉","梅山鄉","竹崎鄉","阿里山鄉","中埔鄉","大埔鄉","水上鄉","鹿草鄉","太保市","朴子市","東石鄉","六腳鄉","新港鄉","民雄鄉","大林鎮","溪口鄉","義竹鄉","布袋鎮"],
@@ -279,7 +351,6 @@ const RAW_AREAS_SOUTH = {
 };
 const CONTACTS_SOUTH = ["Lena念臻", "Linda采陵", "Anna芊岱", "Wendy咨汶"];
 
-/* ---- 中倉資料 ---- */
 const RAW_AREAS_NORTH = RAW_AREAS_SOUTH;
 const CONTACTS_NORTH = CONTACTS_SOUTH;
 
@@ -306,10 +377,6 @@ const WAREHOUSES = {
   north: { name: "中倉", areas: buildAreaList(RAW_AREAS_NORTH), contacts: CONTACTS_NORTH },
 };
 
-/* ================================================================== */
-/* 小工具與範本產生器                                                   */
-/* ================================================================== */
-
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
 function fmtDateTime(iso) {
   const d = new Date(iso), p = n => String(n).padStart(2, "0");
@@ -334,11 +401,7 @@ function copyToClipboard(text) {
   document.body.appendChild(ta);
   ta.focus();
   ta.select();
-  try {
-    document.execCommand("copy");
-  } catch (err) {
-    console.error("複製失敗", err);
-  }
+  try { document.execCommand("copy"); } catch (err) { console.error("複製失敗", err); }
   document.body.removeChild(ta);
 }
 
@@ -350,7 +413,6 @@ function generateChatTemplate(record, scenario = "standard") {
   const phoneText = record.phoneLast3 ? `末三碼 ${record.phoneLast3}` : "";
   const addressText = f.address || record.area || "";
 
-  // 1. 約配未接
   if (record.category === "approve") {
     const tripText = f.availableTrips || f.appointmentDate || "";
     const holdText = f.holdUntil ? `${fmtDate(f.holdUntil)}` : "";
@@ -363,9 +425,8 @@ function generateChatTemplate(record, scenario = "standard") {
 (車趟可保留至${holdText}前)`;
   }
 
-  // 2. 二聯未接（支援 3 種情境）
   if (record.category === "erlian") {
-    if (scenario === "rail") { // 情境：電軌升級未接
+    if (scenario === "rail") {
       const dateText = f.scheduledDate ? fmtDate(f.scheduledDate) : "(日期)";
       const sizeText = f.cabinetSize || "";
       return `${bizName}
@@ -378,29 +439,28 @@ function generateChatTemplate(record, scenario = "standard") {
 電聯未接，需麻煩業務端LINE協助通知時段，當日再請顧客留意師傅抵達前30分鐘電聯，謝謝!`;
     }
 
-    if (scenario === "complaint_erlian") { // 情境：客訴二聯未接
-      const dateText = f.scheduledDate ? fmtDate(f.scheduledDate) : "(日期)";
+    if (scenario === "complaint_erlian") {
+      const dateText = f.scheduledDate ? fmtDate(f.scheduledDate) : "";
       const itemText = f.item || "商品";
-      return `${bizName}
+      return `@
 客訴件編號：${orderNum || itemText}
 客戶姓名：${nameText}
 已排約${dateText}時段 回收${itemText}維修，
 今日二聯未接電話，再請協助通知顧客，謝謝!`;
     }
 
-    // 預設情境：一般通知時段
+    const dateText = f.scheduledDate ? fmtDate(f.scheduledDate) : "";
     const etaText = f.eta ? f.eta : "";
-    return `【通知時段】 ${bizName}
+    return `【通知時段】 @
 訂單 : ${orderNum}
 姓名：${nameText}
 電話：${phoneText}
 地址：${addressText}
 
-已約${etaText ? etaText + ' ' : ''}，順趟路線安排間送達。
+已約${dateText}，順趟路線安排${etaText}間送達。
 今日二聯都未接電話，需麻煩業務端LINE協助通知時段，再請顧客留意司機當日抵達前30分鐘電聯，謝謝!`;
   }
 
-  // 3. 客訴未接
   if (record.category === "complaint") {
     const tripText = f.availableTrips || "";
     const holdText = f.holdUntil ? `${fmtDate(f.holdUntil)}` : "";
@@ -413,20 +473,15 @@ function generateChatTemplate(record, scenario = "standard") {
 (車趟可保留至${holdText}前)`;
   }
 
-  // 4. 其他
   return `${bizName}
 客戶：${nameText}（末三碼：${record.phoneLast3}）
 地區：${record.area || "未填寫"}
 備註：${f.note || "無"}`;
 }
 
-/* ================================================================== */
-/* 狀態                                                                */
-/* ================================================================== */
-
 let state = {
   authed: false,
-  warehouse: null,       // 'south' | 'north'
+  warehouse: null,
   loginPickWarehouse: "south",
   loginPwd: "",
   loginError: "",
@@ -434,8 +489,8 @@ let state = {
   activeRecords: [],
   historyRecords: [],
 
-  tab: "overview",       // overview | zilian
-  subTab: "pending",      // pending | history
+  tab: "overview",
+  subTab: "pending",
   filterCat: "all",
   filterDate: "",
   search: "",
@@ -444,18 +499,15 @@ let state = {
   showAdd: false,
   addForm: null,
 
-  // 編輯相關狀態
   editTarget: null,
-  editType: "active",    // 'active' | 'history'
+  editType: "active",
   editForm: null,
 
-  // 轉自聯
   convertTarget: null,
   convertForm: {},
 
-  // Chat 聯絡業務相關狀態
   chatTarget: null,
-  chatScenario: "standard", // standard | rail | complaint_erlian
+  chatScenario: "standard",
   chatText: "",
   copySuccess: false,
 
@@ -470,18 +522,12 @@ function loadStorage() {
 }
 
 function saveActive() {
-  try {
-    localStorage.setItem(STORAGE_KEY_ACTIVE, JSON.stringify(state.activeRecords));
-  } catch (e) {
-    console.error("localStorage 寫入失敗：", e);
-  }
+  try { localStorage.setItem(STORAGE_KEY_ACTIVE, JSON.stringify(state.activeRecords)); }
+  catch (e) { console.error("localStorage 寫入失敗：", e); }
 }
 function saveHistory() {
-  try {
-    localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(state.historyRecords));
-  } catch (e) {
-    console.error("localStorage 寫入失敗：", e);
-  }
+  try { localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(state.historyRecords)); }
+  catch (e) { console.error("localStorage 寫入失敗：", e); }
 }
 
 function freshAddForm() {
@@ -496,10 +542,6 @@ function freshAddForm() {
     fields: {}
   };
 }
-
-/* ================================================================== */
-/* 動作                                                                */
-/* ================================================================== */
 
 function doLogin() {
   if (state.loginPwd === LOGIN_PASSWORD) {
@@ -548,13 +590,61 @@ function openEdit(id, type = "active") {
   };
   render();
 }
+function closeEdit() { state.editTarget = null; state.editForm = null; render(); }
+
+function saveEdit() {
+  const f = state.editForm;
+  if (!f.phoneLast3.trim()) {
+    const input = document.getElementById("editPhoneInput");
+    const err = document.getElementById("editPhoneError");
+    if (err) err.style.display = "block";
+    if (input) { input.style.borderColor = "#B96B6B"; input.focus(); }
+    return;
+  }
+
+  if (state.editType === "active") {
+    const idx = state.activeRecords.findIndex(r => r.id === f.id);
+    if (idx !== -1) {
+      state.activeRecords[idx] = {
+        ...state.activeRecords[idx],
+        category: f.category,
+        erlianSubType: f.erlianSubType || "delivery",
+        phoneLast3: f.phoneLast3.trim(),
+        lastName: f.lastName.trim(),
+        gender: f.gender,
+        area: f.area,
+        contact: f.contact,
+        fields: { ...f.fields },
+        updatedAt: new Date().toISOString(),
+      };
+      saveActive();
+    }
+  } else {
+    const idx = state.historyRecords.findIndex(r => r.id === f.id);
+    if (idx !== -1) {
+      state.historyRecords[idx] = {
+        ...state.historyRecords[idx],
+        category: f.category,
+        erlianSubType: f.erlianSubType || "delivery",
+        phoneLast3: f.phoneLast3.trim(),
+        lastName: f.lastName.trim(),
+        gender: f.gender,
+        area: f.area,
+        contact: f.contact,
+        fields: { ...f.fields },
+        updatedAt: new Date().toISOString(),
+      };
+      saveHistory();
+    }
+  }
+  closeEdit();
+}
 
 function openChatBiz(id) {
   const record = state.activeRecords.find(r => r.id === id);
   if (!record) return;
   state.chatTarget = record;
   
-  // 自動依據二聯的情境帶入對應範本
   let scenario = "standard";
   if (record.category === "erlian") {
     if (record.erlianSubType === "rail") scenario = "rail";
@@ -628,10 +718,6 @@ function confirmConvert() {
   closeConvert();
 }
 
-/* ================================================================== */
-/* 篩選運算                                                            */
-/* ================================================================== */
-
 function getOverviewList() {
   return state.activeRecords
     .filter(r => r.warehouse === state.warehouse)
@@ -652,10 +738,6 @@ function getZilianHistory() {
     .filter(r => state.zilianSearch ? (r.phoneLast3.includes(state.zilianSearch) || (r.fields.orderNumber||"").includes(state.zilianSearch)) : true)
     .sort((a,b) => new Date(b.resolvedAt) - new Date(a.resolvedAt));
 }
-
-/* ================================================================== */
-/* 畫面渲染                                                            */
-/* ================================================================== */
 
 function render() {
   const app = document.getElementById("app");
@@ -682,8 +764,9 @@ function renderLogin() {
   `;
 }
 
-function catChip(cat, active, extraAttrs) {
-  return `<button type="button" class="cct-cat-chip ${active?'active':''}" style="--chip-color:${cat.color}" ${extraAttrs}>${esc(cat.label)}</button>`;
+function catChip(cat, active, extraAttrs, count) {
+  const countBadge = count !== undefined ? ` (${count})` : "";
+  return `<button type="button" class="cct-cat-chip ${active?'active':''}" style="--chip-color:${cat.color}" ${extraAttrs}>${esc(cat.label)}${countBadge}</button>`;
 }
 
 function renderMain() {
@@ -715,8 +798,39 @@ function renderMain() {
 }
 
 function renderOverview() {
+  const allWarehouseRecords = state.activeRecords.filter(r => r.warehouse === state.warehouse);
+  const totalCount = allWarehouseRecords.length;
+  const overdueCount = allWarehouseRecords.filter(r => daysSince(r.createdAt) >= 1).length;
+  const todayStr = fmtDate(new Date().toISOString());
+  const todayCount = allWarehouseRecords.filter(r => fmtDate(r.createdAt) === todayStr).length;
+
   const list = getOverviewList();
+
   return `
+    <div class="cct-stats-grid">
+      <div class="cct-stat-card">
+        <div class="cct-stat-info">
+          <span class="cct-stat-label">待處理總數</span>
+          <span class="cct-stat-num">${totalCount}</span>
+        </div>
+        <div class="cct-stat-icon primary">📋</div>
+      </div>
+      <div class="cct-stat-card">
+        <div class="cct-stat-info">
+          <span class="cct-stat-label">需優先處理 (≥1天)</span>
+          <span class="cct-stat-num" style="color: ${overdueCount > 0 ? '#C2410C' : '#0F172A'}">${overdueCount}</span>
+        </div>
+        <div class="cct-stat-icon warning">⏳</div>
+      </div>
+      <div class="cct-stat-card">
+        <div class="cct-stat-info">
+          <span class="cct-stat-label">今日新增未接</span>
+          <span class="cct-stat-num">${todayCount}</span>
+        </div>
+        <div class="cct-stat-icon success">📅</div>
+      </div>
+    </div>
+
     <div class="cct-filter-bar">
       <div class="cct-search-box">
         🔍 <input type="text" inputmode="numeric" maxlength="3" placeholder="搜尋末三碼" id="searchInput" value="${esc(state.search)}" data-act="search" />
@@ -726,12 +840,19 @@ function renderOverview() {
         ${state.filterDate ? `<button type="button" class="cct-clear-date" data-act="clearDate">✕</button>` : ""}
       </div>
     </div>
+    
     <div class="cct-cat-filter">
-      <button type="button" class="cct-cat-chip ${state.filterCat==='all'?'active':''}" style="--chip-color:#4A4A4E" data-act="filterCat" data-cat="all">全部</button>
-      ${CATEGORIES.map(c => catChip(c, state.filterCat===c.id, `data-act="filterCat" data-cat="${c.id}"`)).join("")}
+      <button type="button" class="cct-cat-chip ${state.filterCat==='all'?'active':''}" style="--chip-color:#4A4A4E" data-act="filterCat" data-cat="all">
+        全部 (${totalCount})
+      </button>
+      ${CATEGORIES.map(c => {
+        const catCount = allWarehouseRecords.filter(r => r.category === c.id).length;
+        return catChip(c, state.filterCat===c.id, `data-act="filterCat" data-cat="${c.id}"`, catCount);
+      }).join("")}
     </div>
+
     ${list.length === 0
-      ? `<div class="cct-empty">目前沒有符合條件的未處理紀錄</div>`
+      ? `<div class="cct-empty">🎉 目前沒有符合條件的未處理紀錄</div>`
       : `<div class="cct-list">${list.map(r => renderCard(r, r.category !== "zilian", false)).join("")}</div>`
     }
   `;
@@ -1074,10 +1195,6 @@ function renderConvertModal() {
   `;
 }
 
-/* ================================================================== */
-/* 事件綁定                                                            */
-/* ================================================================== */
-
 function bindEvents() {
   const app = document.getElementById("app");
 
@@ -1092,7 +1209,6 @@ function bindEvents() {
     if (act === "filterCat") el.onclick = () => { state.filterCat = el.dataset.cat; render(); };
     if (act === "clearDate") el.onclick = () => { state.filterDate = ""; render(); };
 
-    // 新增
     if (act === "open-add") el.onclick = () => openAdd();
     if (act === "close-add") el.onclick = () => closeAdd();
     if (act === "backdrop-add") el.onclick = (e) => { if (e.target === el) closeAdd(); };
@@ -1101,7 +1217,6 @@ function bindEvents() {
     if (act === "pickErlianSub") el.onclick = () => { state.addForm.erlianSubType = el.dataset.sub; render(); };
     if (act === "addGender") el.onclick = () => { state.addForm.gender = el.dataset.g; render(); };
 
-    // 編輯
     if (act === "open-edit") el.onclick = () => openEdit(el.dataset.id, el.dataset.type);
     if (act === "close-edit") el.onclick = () => closeEdit();
     if (act === "backdrop-edit") el.onclick = (e) => { if (e.target === el) closeEdit(); };
@@ -1110,21 +1225,18 @@ function bindEvents() {
     if (act === "pickEditErlianSub") el.onclick = () => { state.editForm.erlianSubType = el.dataset.sub; render(); };
     if (act === "editGender") el.onclick = () => { state.editForm.gender = el.dataset.g; render(); };
 
-    // 業務 Chat 範本
     if (act === "chat-biz") el.onclick = () => openChatBiz(el.dataset.id);
     if (act === "close-chat") el.onclick = () => closeChatBiz();
     if (act === "backdrop-chat") el.onclick = (e) => { if (e.target === el) closeChatBiz(); };
     if (act === "copy-chat") el.onclick = () => doCopyChat();
     if (act === "switchScenario") el.onclick = () => switchChatScenario(el.dataset.sc);
 
-    // 結案與轉自聯
     if (act === "done") el.onclick = () => markDone(el.dataset.id);
     if (act === "convert") el.onclick = () => openConvert(el.dataset.id);
     if (act === "close-convert") el.onclick = () => closeConvert();
     if (act === "backdrop-convert") el.onclick = (e) => { if (e.target === el) closeConvert(); };
     if (act === "confirm-convert") el.onclick = () => confirmConvert();
 
-    // 勾選框
     if (act === "checkbox") el.onclick = () => {
       const scope = el.dataset.scope, key = el.dataset.key;
       const target = scope === "add" ? state.addForm.fields : (scope === "edit" ? state.editForm.fields : state.convertForm);
@@ -1134,7 +1246,6 @@ function bindEvents() {
       }
     };
 
-    // 車牌快速標籤點擊
     if (act === "setQuickChip") el.onclick = () => {
       const scope = el.dataset.scope, key = el.dataset.key, val = el.dataset.val;
       const target = scope === "add" ? state.addForm.fields : (scope === "edit" ? state.editForm.fields : state.convertForm);
@@ -1145,7 +1256,6 @@ function bindEvents() {
     };
   });
 
-  // 搜尋列事件
   const searchInput = app.querySelector("#searchInput");
   if (searchInput) searchInput.oninput = (e) => { state.search = e.target.value.replace(/[^0-9]/g, ""); renderListOnly(); };
 
@@ -1161,13 +1271,11 @@ function bindEvents() {
     loginPwdInput.onkeydown = (e) => { if (e.key === "Enter") doLogin(); };
   }
 
-  // 業務訊息編輯事件
   const chatTextArea = app.querySelector("#chatTextArea");
   if (chatTextArea) {
     chatTextArea.oninput = (e) => { state.chatText = e.target.value; };
   }
 
-  // 新增表單即時輸入
   app.querySelectorAll('[data-act="addPhone"]').forEach(el => {
     el.oninput = (e) => {
       state.addForm.phoneLast3 = e.target.value.replace(/[^0-9]/g, "");
@@ -1180,7 +1288,6 @@ function bindEvents() {
   app.querySelectorAll('[data-act="addLastName"]').forEach(el => { el.oninput = (e) => { state.addForm.lastName = e.target.value; }; });
   app.querySelectorAll('[data-act="addContact"]').forEach(el => { el.onchange = (e) => { state.addForm.contact = e.target.value; }; });
 
-  // 編輯表單即時輸入
   app.querySelectorAll('[data-act="editPhone"]').forEach(el => {
     el.oninput = (e) => {
       state.editForm.phoneLast3 = e.target.value.replace(/[^0-9]/g, "");
@@ -1193,7 +1300,6 @@ function bindEvents() {
   app.querySelectorAll('[data-act="editLastName"]').forEach(el => { el.oninput = (e) => { state.editForm.lastName = e.target.value; }; });
   app.querySelectorAll('[data-act="editContact"]').forEach(el => { el.onchange = (e) => { state.editForm.contact = e.target.value; }; });
 
-  // 動態欄位即時輸入
   app.querySelectorAll('[data-act="field"]').forEach(el => {
     el.oninput = (e) => {
       const scope = el.dataset.scope, key = el.dataset.key;
@@ -1202,7 +1308,6 @@ function bindEvents() {
     };
   });
 
-  // 配送地區即時輸入與自動完成
   app.querySelectorAll('[data-act="areaInput"]').forEach(el => {
     const scope = el.dataset.scope;
     el.oninput = (e) => {
@@ -1246,10 +1351,6 @@ function renderListOnly() {
     }
   }
 }
-
-/* ================================================================== */
-/* 啟動                                                                */
-/* ================================================================== */
 
 render();
 </script>
