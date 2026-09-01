@@ -122,7 +122,6 @@
   .cct-subtab.active { background: var(--primary); border-color: var(--primary); color: white; box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25); }
   .cct-main { padding: 18px 20px 100px; }
 
-  /* FILTER BAR */
   .cct-filter-bar { display: flex; gap: 10px; margin-bottom: 14px; }
   .cct-search-box, .cct-date-box {
     display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1.5px solid var(--border);
@@ -262,7 +261,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
-const SUPABASE_URL = "https://fgfdvjjrzzjavcseulpg.supabase.co";
+const RAW_SUPABASE_URL = "https://fgfdvjjrzzjavcseulpg.supabase.co";
+const SUPABASE_URL = RAW_SUPABASE_URL.replace(/\/rest\/v1\/?$/, "").replace(/\/$/, "");
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnZmR2ampyenpqYXZjc2V1bHBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyNDQyODcsImV4cCI6MjEwMzgyMDI4N30.nJ7PCIJiQNUjTUK3cTtYjvdSocJU5XktP2yt-OQVOCE";
 
 const LOGIN_PASSWORD = "65905937";
@@ -274,8 +274,7 @@ let isCloudSynced = false;
 
 if (typeof supabase !== "undefined" && SUPABASE_URL && SUPABASE_ANON_KEY) {
   try {
-    const cleanUrl = SUPABASE_URL.replace(/\/rest\/v1\/?$/, "");
-    supabaseClient = supabase.createClient(cleanUrl, SUPABASE_ANON_KEY);
+    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     isCloudSynced = true;
   } catch (err) {
     console.error("Supabase 連線失敗，自動切換至本機模式", err);
@@ -501,73 +500,71 @@ function saveHistoryLocal() {
   try { localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(state.historyRecords)); } catch (e) {}
 }
 
+async function fetchCloudData(silent = false) {
+  if (!supabaseClient) return;
+  try {
+    const { data: aData, error: aErr } = await supabaseClient.from('active_records').select('*');
+    if (!aErr && aData) state.activeRecords = aData;
+
+    const { data: hData, error: hErr } = await supabaseClient.from('history_records').select('*');
+    if (!hErr && hData) state.historyRecords = hData;
+
+    if (!silent) render();
+    else {
+      const activeEl = document.activeElement;
+      if (!activeEl || (activeEl.tagName !== 'INPUT' && activeEl.tagName !== 'TEXTAREA')) {
+        render();
+      }
+    }
+  } catch (err) {
+    console.error("讀取雲端資料失敗", err);
+  }
+}
+
 async function initCloudSync() {
+  loadStorage();
+  
   if (!isCloudSynced || !supabaseClient) {
     console.log("未設定 Supabase 金鑰，自動開啟 LocalStorage 本機模式");
-    loadStorage();
     render();
     return;
   }
 
+  await fetchCloudData();
+
+  // 定期輪詢 (每 5 秒備援刷新)
+  setInterval(() => {
+    fetchCloudData(true);
+  }, 5000);
+
+  // 安全地偵測當前環境（Canvas / Sandbox）是否允許建立 WebSocket
+  let supportsWebSocket = false;
   try {
-    const { data: activeData, error: activeErr } = await supabaseClient.from('active_records').select('*');
-    if (activeErr) throw activeErr;
-    if (activeData) state.activeRecords = activeData;
+    if (typeof WebSocket !== 'undefined') {
+      const wsUrl = SUPABASE_URL.replace(/^http/, 'ws') + '/realtime/v1/websocket';
+      const testWs = new WebSocket(wsUrl);
+      testWs.onerror = () => {};
+      testWs.close();
+      supportsWebSocket = true;
+    }
+  } catch (wsTestErr) {
+    console.warn("當前沙盒環境 (Canvas) 限制 WebSocket 連線，已自動啟用 HTTP REST 定時輪詢模式。");
+    supportsWebSocket = false;
+  }
 
-    const { data: historyData, error: historyErr } = await supabaseClient.from('history_records').select('*');
-    if (historyErr) throw historyErr;
-    if (historyData) state.historyRecords = historyData;
-
-    render();
-
-    let canUseWebSocket = false;
+  // 僅在允許 WebSocket 的非沙盒環境中啟動 Supabase Realtime 廣播
+  if (supportsWebSocket) {
     try {
-      if (typeof WebSocket !== 'undefined') {
-        const testWs = new WebSocket('wss://fgfdvjjrzzjavcseulpg.supabase.co/realtime/v1/websocket');
-        testWs.close();
-        canUseWebSocket = true;
-      }
-    } catch (wsCheckErr) {
-      console.warn("偵測到 Canvas 沙盒或受限制環境 (SecurityError)，已自動切換至 HTTP REST 輪詢同步模式");
-      canUseWebSocket = false;
+      supabaseClient
+        .channel('public:records')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'active_records' }, () => fetchCloudData(true))
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'history_records' }, () => fetchCloudData(true))
+        .subscribe((status, err) => {
+          if (err) console.warn("Supabase Realtime 訂閱狀態:", status, err);
+        });
+    } catch (wsErr) {
+      console.warn("Realtime WebSocket 訂閱失敗，改用 HTTP 定時輪詢");
     }
-
-    if (canUseWebSocket) {
-      try {
-        supabaseClient
-          .channel('public:records')
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'active_records' }, async () => {
-            const { data } = await supabaseClient.from('active_records').select('*');
-            if (data) { state.activeRecords = data; render(); }
-          })
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'history_records' }, async () => {
-            const { data } = await supabaseClient.from('history_records').select('*');
-            if (data) { state.historyRecords = data; render(); }
-          })
-          .subscribe();
-      } catch (wsErr) {
-        console.warn("WebSocket 建立失敗，切換為 HTTP 輪詢模式", wsErr);
-      }
-    }
-
-    // 定期輪詢以保證資料即時性 (每 10 秒備援刷新)
-    setInterval(async () => {
-      try {
-        const { data: aData } = await supabaseClient.from('active_records').select('*');
-        if (aData) state.activeRecords = aData;
-        const { data: hData } = await supabaseClient.from('history_records').select('*');
-        if (hData) state.historyRecords = hData;
-        render();
-      } catch (e) {
-        // 靜默處理輪詢異常
-      }
-    }, 10000);
-
-  } catch (err) {
-    console.error("雲端同步失敗，切換回本機模式", err);
-    isCloudSynced = false;
-    loadStorage();
-    render();
   }
 }
 
@@ -616,15 +613,15 @@ async function saveAdd() {
     area: f.area, contact: f.contact, fields: { ...f.fields },
   };
 
+  state.activeRecords.unshift(record);
+  saveActiveLocal();
+  closeAdd();
+
   if (isCloudSynced && supabaseClient) {
     try {
       await supabaseClient.from('active_records').insert([record]);
     } catch (e) { console.error("Cloud save failed:", e); }
-  } else {
-    state.activeRecords.unshift(record);
-    saveActiveLocal();
   }
-  closeAdd();
 }
 
 function openEdit(id, type = "active") {
@@ -664,27 +661,27 @@ async function saveEdit() {
     updatedAt: new Date().toISOString(),
   };
 
+  if (state.editType === "active") {
+    const idx = state.activeRecords.findIndex(r => r.id === f.id);
+    if (idx !== -1) {
+      state.activeRecords[idx] = { ...state.activeRecords[idx], ...updatedRecord };
+      saveActiveLocal();
+    }
+  } else {
+    const idx = state.historyRecords.findIndex(r => r.id === f.id);
+    if (idx !== -1) {
+      state.historyRecords[idx] = { ...state.historyRecords[idx], ...updatedRecord };
+      saveHistoryLocal();
+    }
+  }
+  closeEdit();
+
   if (isCloudSynced && supabaseClient) {
     try {
       const table = state.editType === "active" ? 'active_records' : 'history_records';
       await supabaseClient.from(table).update(updatedRecord).eq('id', f.id);
     } catch (e) { console.error("Cloud update failed:", e); }
-  } else {
-    if (state.editType === "active") {
-      const idx = state.activeRecords.findIndex(r => r.id === f.id);
-      if (idx !== -1) {
-        state.activeRecords[idx] = { ...state.activeRecords[idx], ...updatedRecord };
-        saveActiveLocal();
-      }
-    } else {
-      const idx = state.historyRecords.findIndex(r => r.id === f.id);
-      if (idx !== -1) {
-        state.historyRecords[idx] = { ...state.historyRecords[idx], ...updatedRecord };
-        saveHistoryLocal();
-      }
-    }
   }
-  closeEdit();
 }
 
 function openChatBiz(id) {
@@ -731,6 +728,14 @@ async function markDone(id) {
   const record = state.activeRecords.find(r => r.id === id);
   if (!record) return;
 
+  state.activeRecords = state.activeRecords.filter(r => r.id !== id);
+  if (record.category === "zilian") {
+    state.historyRecords.unshift({ ...record, resolvedAt: new Date().toISOString() });
+    saveHistoryLocal();
+  }
+  saveActiveLocal();
+  render();
+
   if (isCloudSynced && supabaseClient) {
     try {
       await supabaseClient.from('active_records').delete().eq('id', id);
@@ -738,14 +743,6 @@ async function markDone(id) {
         await supabaseClient.from('history_records').insert([{ ...record, resolvedAt: new Date().toISOString() }]);
       }
     } catch (e) { console.error("Cloud mark done failed:", e); }
-  } else {
-    state.activeRecords = state.activeRecords.filter(r => r.id !== id);
-    if (record.category === "zilian") {
-      state.historyRecords.unshift({ ...record, resolvedAt: new Date().toISOString() });
-      saveHistoryLocal();
-    }
-    saveActiveLocal();
-    render();
   }
 }
 
@@ -768,18 +765,17 @@ async function confirmConvert() {
     area: record.area, contact: record.contact, fields: { ...state.convertForm },
   };
 
+  state.activeRecords = state.activeRecords.filter(r => r.id !== record.id);
+  state.activeRecords.unshift(converted);
+  saveActiveLocal();
+  closeConvert();
+
   if (isCloudSynced && supabaseClient) {
     try {
       await supabaseClient.from('active_records').delete().eq('id', record.id);
       await supabaseClient.from('active_records').insert([converted]);
     } catch (e) { console.error("Cloud convert failed:", e); }
-  } else {
-    state.activeRecords = state.activeRecords.filter(r => r.id !== record.id);
-    state.activeRecords.unshift(converted);
-    saveActiveLocal();
-    render();
   }
-  closeConvert();
 }
 
 function getOverviewList() {
