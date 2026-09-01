@@ -210,23 +210,42 @@ const CAT_MAP = Object.fromEntries(CATEGORIES.map(c => [c.id, c]));
 
 const PLATE_OPTIONS = ["展", "陳", "9119", "3857", "6852"];
 
+const ERLIAN_SUBTYPES = [
+  { id: "delivery", label: "配送 (一般)" },
+  { id: "rail", label: "電軌升級" },
+  { id: "complaint", label: "客訴件" },
+];
+
+const ERLIAN_FIELDS = {
+  delivery: [
+    { key: "orderNumber", label: "訂單編號", type: "text" },
+    { key: "address", label: "詳細地址", type: "text" },
+    { key: "plate", label: "車牌", type: "datalist", options: PLATE_OPTIONS },
+    { key: "eta", label: "預計抵達時間/配送時段", type: "text" },
+    { key: "balance", label: "尾款", type: "checkbox" },
+    { key: "note", label: "備註", type: "textarea" },
+  ],
+  rail: [
+    { key: "orderNumber", label: "訂單編號", type: "text" },
+    { key: "address", label: "詳細地址", type: "text" },
+    { key: "scheduledDate", label: "預約升級日期", type: "date" },
+    { key: "cabinetSize", label: "餐邊櫃電軌尺寸(cm)", type: "text" },
+    { key: "note", label: "備註", type: "textarea" },
+  ],
+  complaint: [
+    { key: "orderNumber", label: "客訴件編號", type: "text" },
+    { key: "scheduledDate", label: "排約維修日期", type: "date" },
+    { key: "item", label: "回收維修商品", type: "text" },
+    { key: "note", label: "備註", type: "textarea" },
+  ],
+};
+
 const CATEGORY_FIELDS = {
   approve: [
     { key: "orderNumber", label: "訂單編號", type: "text" },
     { key: "appointmentDate", label: "目前可約配日期", type: "date" },
     { key: "availableTrips", label: "目前可提供車趟", type: "text" },
     { key: "holdUntil", label: "車趟保留至", type: "date" },
-    { key: "note", label: "備註", type: "textarea" },
-  ],
-  erlian: [
-    { key: "orderNumber", label: "訂單編號", type: "text" },
-    { key: "address", label: "詳細地址", type: "text" },
-    { key: "plate", label: "車牌", type: "datalist", options: PLATE_OPTIONS },
-    { key: "eta", label: "預計抵達時間/配送時段", type: "text" },
-    { key: "scheduledDate", label: "預約/升級日期", type: "date" },
-    { key: "cabinetSize", label: "餐邊櫃電軌尺寸(cm)", type: "text" },
-    { key: "item", label: "客訴回收商品/品項", type: "text" },
-    { key: "balance", label: "尾款", type: "checkbox" },
     { key: "note", label: "備註", type: "textarea" },
   ],
   complaint: [
@@ -244,6 +263,14 @@ const CATEGORY_FIELDS = {
   ],
   other: [{ key: "note", label: "備註", type: "textarea" }],
 };
+
+function getCategoryFields(category, erlianSubType) {
+  if (category === "erlian") {
+    return ERLIAN_FIELDS[erlianSubType || "delivery"] || ERLIAN_FIELDS.delivery;
+  }
+  return CATEGORY_FIELDS[category] || [];
+}
+
 const CONVERT_FIELDS = CATEGORY_FIELDS.zilian;
 
 /* ---- 南倉資料 ---- */
@@ -322,7 +349,7 @@ function copyToClipboard(text) {
 
 function generateChatTemplate(record, scenario = "standard") {
   const f = record.fields || {};
-  const bizName = record.contact ? `@${record.contact}` : "@業務名稱";
+  const bizName = "@";
   const nameText = `${record.lastName || ""}${record.gender || ""}`.trim() || "顧客";
   const orderNum = f.orderNumber ? f.orderNumber : "";
   const phoneText = record.phoneLast3 ? `末三碼 ${record.phoneLast3}` : "";
@@ -360,7 +387,7 @@ function generateChatTemplate(record, scenario = "standard") {
       const dateText = f.scheduledDate ? fmtDate(f.scheduledDate) : "(日期)";
       const itemText = f.item || "商品";
       return `${bizName}
-客訴件：${orderNum || itemText}
+客訴件編號：${orderNum || itemText}
 客戶姓名：${nameText}
 已排約${dateText}時段 回收${itemText}維修，
 今日二聯未接電話，再請協助通知顧客，謝謝!`;
@@ -465,6 +492,7 @@ function saveHistory() {
 function freshAddForm() {
   return {
     category: "approve",
+    erlianSubType: "delivery",
     phoneLast3: "",
     lastName: "",
     gender: "先生",
@@ -503,7 +531,7 @@ function saveAdd() {
     return;
   }
   const record = {
-    id: uid(), warehouse: state.warehouse, category: f.category, createdAt: new Date().toISOString(),
+    id: uid(), warehouse: state.warehouse, category: f.category, erlianSubType: f.erlianSubType || "delivery", createdAt: new Date().toISOString(),
     phoneLast3: f.phoneLast3.trim(), lastName: f.lastName.trim(), gender: f.gender,
     area: f.area, contact: f.contact, fields: { ...f.fields },
   };
@@ -520,82 +548,28 @@ function openEdit(id, type = "active") {
   state.editType = type;
   state.editForm = {
     ...record,
+    erlianSubType: record.erlianSubType || "delivery",
     fields: { ...(record.fields || {}) }
   };
   render();
-}
-function closeEdit() { state.editTarget = null; state.editForm = null; render(); }
-function saveEdit() {
-  const f = state.editForm;
-  if (!f.phoneLast3.trim()) {
-    const input = document.getElementById("editPhoneInput");
-    const err = document.getElementById("editPhoneError");
-    if (err) err.style.display = "block";
-    if (input) { input.style.borderColor = "#B96B6B"; input.focus(); }
-    return;
-  }
-
-  if (state.editType === "active") {
-    const idx = state.activeRecords.findIndex(r => r.id === f.id);
-    if (idx !== -1) {
-      state.activeRecords[idx] = {
-        ...state.activeRecords[idx],
-        category: f.category,
-        phoneLast3: f.phoneLast3.trim(),
-        lastName: f.lastName.trim(),
-        gender: f.gender,
-        area: f.area,
-        contact: f.contact,
-        fields: { ...f.fields },
-        updatedAt: new Date().toISOString(),
-      };
-      saveActive();
-    }
-  } else {
-    const idx = state.historyRecords.findIndex(r => r.id === f.id);
-    if (idx !== -1) {
-      state.historyRecords[idx] = {
-        ...state.historyRecords[idx],
-        category: f.category,
-        phoneLast3: f.phoneLast3.trim(),
-        lastName: f.lastName.trim(),
-        gender: f.gender,
-        area: f.area,
-        contact: f.contact,
-        fields: { ...f.fields },
-        updatedAt: new Date().toISOString(),
-      };
-      saveHistory();
-    }
-  }
-  closeEdit();
 }
 
 function openChatBiz(id) {
   const record = state.activeRecords.find(r => r.id === id);
   if (!record) return;
   state.chatTarget = record;
-  state.chatScenario = "standard";
-  state.chatText = generateChatTemplate(record, "standard");
-  state.copySuccess = false;
-  render();
-}
-function switchChatScenario(scenario) {
+  
+  // 自動依據二聯的情境帶入對應範本
+  let scenario = "standard";
+  if (record.category === "erlian") {
+    if (record.erlianSubType === "rail") scenario = "rail";
+    else if (record.erlianSubType === "complaint") scenario = "complaint_erlian";
+    else scenario = "standard";
+  }
+  
   state.chatScenario = scenario;
-  state.chatText = generateChatTemplate(state.chatTarget, scenario);
+  state.chatText = generateChatTemplate(record, scenario);
   state.copySuccess = false;
-  render();
-}
-function closeChatBiz() {
-  state.chatTarget = null;
-  state.chatScenario = "standard";
-  state.chatText = "";
-  state.copySuccess = false;
-  render();
-}
-function doCopyChat() {
-  copyToClipboard(state.chatText);
-  state.copySuccess = true;
   render();
 }
 
@@ -761,8 +735,15 @@ function renderZilian() {
 
 function renderCard(record, showConvert, resolved) {
   const cat = CAT_MAP[record.category] || { label: "其他", color: "#9B9B93" };
-  const fieldDefs = CATEGORY_FIELDS[record.category] || [];
+  const fieldDefs = getCategoryFields(record.category, record.erlianSubType);
   const days = daysSince(record.createdAt);
+  
+  let catLabel = cat.label;
+  if (record.category === "erlian") {
+    const sub = ERLIAN_SUBTYPES.find(s => s.id === record.erlianSubType);
+    if (sub) catLabel += ` · ${sub.label}`;
+  }
+
   const extras = fieldDefs.map(f => {
     const v = record.fields?.[f.key];
     if (f.type === "checkbox") {
@@ -780,7 +761,7 @@ function renderCard(record, showConvert, resolved) {
       <div class="cct-card-bar"></div>
       <div class="cct-card-body">
         <div class="cct-card-top">
-          <span class="cct-tag" style="background:${cat.color}">${esc(cat.label)}</span>
+          <span class="cct-tag" style="background:${cat.color}">${esc(catLabel)}</span>
           <span class="cct-card-time">🕓 ${fmtDateTime(record.createdAt)}
             ${!resolved && days >= 1 ? `<span class="cct-age-badge">已等 ${days} 天</span>` : ""}
           </span>
@@ -893,7 +874,7 @@ function updateAreaDropdown(scope) {
 function renderAddModal() {
   const f = state.addForm;
   const wh = WAREHOUSES[state.warehouse];
-  const fields = CATEGORY_FIELDS[f.category] || [];
+  const fields = getCategoryFields(f.category, f.erlianSubType);
   return `
     <div class="cct-modal-backdrop" data-act="backdrop-add">
       <div class="cct-modal" data-stop="1">
@@ -905,6 +886,16 @@ function renderAddModal() {
               ${CATEGORIES.map(c => catChip(c, f.category===c.id, `data-act="pickCat" data-cat="${c.id}"`)).join("")}
             </div>
           </div>
+          ${f.category === "erlian" ? `
+            <div class="cct-field">
+              <label>二聯情境類型</label>
+              <div class="cct-toggle">
+                ${ERLIAN_SUBTYPES.map(s => `
+                  <button type="button" class="cct-toggle-btn ${f.erlianSubType===s.id?'active':''}" data-act="pickErlianSub" data-sub="${s.id}">${esc(s.label)}</button>
+                `).join("")}
+              </div>
+            </div>
+          ` : ""}
           <div class="cct-grid-2">
             <div class="cct-field">
               <label>電話末三碼</label>
@@ -947,7 +938,7 @@ function renderAddModal() {
 function renderEditModal() {
   const f = state.editForm;
   const wh = WAREHOUSES[state.warehouse];
-  const fields = CATEGORY_FIELDS[f.category] || [];
+  const fields = getCategoryFields(f.category, f.erlianSubType);
   return `
     <div class="cct-modal-backdrop" data-act="backdrop-edit">
       <div class="cct-modal" data-stop="1">
@@ -959,6 +950,16 @@ function renderEditModal() {
               ${CATEGORIES.map(c => catChip(c, f.category===c.id, `data-act="pickEditCat" data-cat="${c.id}"`)).join("")}
             </div>
           </div>
+          ${f.category === "erlian" ? `
+            <div class="cct-field">
+              <label>二聯情境類型</label>
+              <div class="cct-toggle">
+                ${ERLIAN_SUBTYPES.map(s => `
+                  <button type="button" class="cct-toggle-btn ${f.erlianSubType===s.id?'active':''}" data-act="pickEditErlianSub" data-sub="${s.id}">${esc(s.label)}</button>
+                `).join("")}
+              </div>
+            </div>
+          ` : ""}
           <div class="cct-grid-2">
             <div class="cct-field">
               <label>電話末三碼</label>
@@ -1076,6 +1077,7 @@ function bindEvents() {
     if (act === "backdrop-add") el.onclick = (e) => { if (e.target === el) closeAdd(); };
     if (act === "save-add") el.onclick = () => saveAdd();
     if (act === "pickCat") el.onclick = () => { state.addForm.category = el.dataset.cat; render(); };
+    if (act === "pickErlianSub") el.onclick = () => { state.addForm.erlianSubType = el.dataset.sub; render(); };
     if (act === "addGender") el.onclick = () => { state.addForm.gender = el.dataset.g; render(); };
 
     // 編輯
@@ -1084,6 +1086,7 @@ function bindEvents() {
     if (act === "backdrop-edit") el.onclick = (e) => { if (e.target === el) closeEdit(); };
     if (act === "save-edit") el.onclick = () => saveEdit();
     if (act === "pickEditCat") el.onclick = () => { state.editForm.category = el.dataset.cat; render(); };
+    if (act === "pickEditErlianSub") el.onclick = () => { state.editForm.erlianSubType = el.dataset.sub; render(); };
     if (act === "editGender") el.onclick = () => { state.editForm.gender = el.dataset.g; render(); };
 
     // 業務 Chat 範本
