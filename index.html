@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>客服快速聯絡網（本機測試版）</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    font-family: "Noto Sans TC", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #F7F5F1;
+    color: #2B2B2E;
+  }
+  :root {
+    --bg: #F7F5F1;
+    --surface: #FFFFFF;
+    --text: #2B2B2E;
+    --text-muted: #7A7A80;
+    --border: #E4E1DA;
+    --primary: #7C93A3;
+    --primary-dark: #5C7385;
+    --danger: #B96B6B;
+  }
+  #app {
+    max-width: 640px;
+    margin: 0 auto;
+    min-height: 100vh;
+    position: relative;
+    letter-spacing: 0.01em;
+  }
+
+  /* ---- 登入畫面 ---- */
+  .cct-login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .cct-login-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 40px 32px; width: 100%; max-width: 340px; text-align: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .cct-logo {
+    width: 48px; height: 48px; border-radius: 12px; background: var(--text); color: var(--bg);
+    display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px;
+    letter-spacing: 0.08em; margin: 0 auto 20px;
+  }
+  .cct-logo-sm { width: 36px; height: 36px; font-size: 11px; margin: 0; }
+  .cct-login-card h1 { font-size: 18px; margin: 0 0 4px; font-weight: 700; }
+  .cct-login-sub { color: var(--text-muted); font-size: 13px; margin: 0 0 20px; }
+  .cct-wh-picker { display: flex; gap: 8px; margin-bottom: 16px; }
+  .cct-wh-btn {
+    flex: 1; padding: 12px; border: 1.5px solid var(--border); border-radius: 10px;
+    background: var(--bg); font-size: 14px; font-weight: 600; color: var(--text-muted); cursor: pointer;
+  }
+  .cct-wh-btn.active { background: var(--primary); border-color: var(--primary); color: white; }
+  .cct-login-card input {
+    width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px;
+    font-size: 15px; margin-bottom: 12px; background: var(--bg); color: var(--text);
+  }
+  .cct-login-card input:focus { outline: none; border-color: var(--primary); }
+  .cct-login-error { color: var(--danger); font-size: 13px; margin-bottom: 12px; text-align: left; }
+  .cct-login-btn { width: 100%; justify-content: center; }
+
+  /* ---- Header ---- */
+  .cct-header {
+    display: flex; align-items: center; justify-content: space-between; padding: 16px 20px;
+    background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10;
+  }
+  .cct-header-left { display: flex; align-items: center; gap: 12px; }
+  .cct-header-title { font-weight: 700; font-size: 15px; }
+  .cct-header-sub { font-size: 12px; color: var(--text-muted); }
+
+  /* ---- Tabs ---- */
+  .cct-tabs { display: flex; gap: 4px; padding: 10px 20px 0; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .cct-tab { border: none; background: none; padding: 10px 16px; font-size: 14px; font-weight: 600; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; }
+  .cct-tab.active { color: var(--primary-dark); border-bottom-color: var(--primary); }
+  .cct-subtabs { display: flex; gap: 8px; margin-bottom: 12px; }
+  .cct-subtab { border: 1px solid var(--border); background: var(--surface); padding: 6px 14px; border-radius: 999px; font-size: 13px; cursor: pointer; color: var(--text-muted); }
+  .cct-subtab.active { background: var(--primary); border-color: var(--primary); color: white; }
+  .cct-main { padding: 16px 20px 100px; }
+  .cct-error-banner { background: #F6E8E8; color: var(--danger); padding: 8px 20px; font-size: 13px; }
+
+  /* ---- Filters ---- */
+  .cct-filter-bar { display: flex; gap: 10px; margin-bottom: 12px; }
+  .cct-search-box, .cct-date-box {
+    display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 9px 12px; color: var(--text-muted); flex: 1;
+  }
+  .cct-search-wide { margin-bottom: 12px; }
+  .cct-search-box input, .cct-date-box input { border: none; outline: none; background: none; font-size: 14px; color: var(--text); width: 100%; }
+  .cct-date-box { flex: 1.2; position: relative; }
+  .cct-clear-date { border: none; background: none; cursor: pointer; color: var(--text-muted); padding: 0; }
+  .cct-cat-filter { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .cct-cat-chip {
+    border: 1.5px solid var(--chip-color, var(--border)); background: var(--surface); color: var(--chip-color, var(--text));
+    padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .cct-cat-chip.active { background: var(--chip-color, var(--primary)); color: white; }
+  .cct-cat-picker { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  /* ---- List / Card ---- */
+  .cct-list { display: flex; flex-direction: column; gap: 12px; }
+  .cct-loading, .cct-empty { text-align: center; color: var(--text-muted); padding: 40px 0; font-size: 14px; }
+  .cct-card { display: flex; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .cct-card-bar { width: 5px; background: var(--cat-color); flex-shrink: 0; }
+  .cct-card-body { padding: 14px 16px; flex: 1; }
+  .cct-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .cct-tag { color: white; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
+  .cct-card-time { font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; }
+  .cct-age-badge { background: #F3E3D3; color: #9A6B34; font-weight: 700; padding: 2px 8px; border-radius: 999px; margin-left: 6px; }
+  .cct-card-main { display: flex; flex-wrap: wrap; gap: 10px 16px; font-size: 14px; margin-bottom: 8px; }
+  .cct-phone { font-weight: 700; }
+  .cct-name { font-weight: 600; }
+  .cct-area, .cct-contact { color: var(--text-muted); }
+  .cct-card-extra { display: flex; flex-direction: column; gap: 4px; background: var(--bg); border-radius: 8px; padding: 8px 10px; margin-bottom: 10px; }
+  .cct-extra-item { display: flex; gap: 8px; font-size: 13px; }
+  .cct-extra-label { color: var(--text-muted); flex-shrink: 0; }
+  .cct-extra-value { color: var(--text); font-weight: 500; }
+  .cct-balance-badge { display: inline-flex; align-items: center; gap: 4px; background: #E8EEF1; color: var(--primary-dark); font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; width: fit-content; }
+  .cct-resolved-note { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  .cct-card-actions { display: flex; gap: 8px; margin-top: 4px; }
+
+  /* ---- Buttons ---- */
+  .cct-btn { display: inline-flex; align-items: center; gap: 6px; border: none; border-radius: 10px; padding: 9px 16px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .cct-btn-primary { background: var(--primary); color: white; }
+  .cct-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .cct-btn-outline { background: var(--surface); border: 1px solid var(--border); color: var(--text); }
+  .cct-btn-ghost { background: none; color: var(--text-muted); }
+  .cct-icon-btn { border: none; background: none; cursor: pointer; color: var(--text-muted); padding: 6px; border-radius: 8px; }
+
+  .cct-fab {
+    position: fixed; bottom: 24px; right: 24px; width: 56px; height: 56px; border-radius: 50%;
+    background: var(--primary); color: white; border: none; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 14px rgba(92, 115, 133, 0.4); cursor: pointer; font-size: 26px; line-height: 1;
+  }
+
+  /* ---- Modal ---- */
+  .cct-modal-backdrop { position: fixed; inset: 0; background: rgba(43,43,46,0.4); display: flex; align-items: flex-end; justify-content: center; z-index: 100; }
+  .cct-modal { background: var(--surface); width: 100%; max-width: 480px; max-height: 88vh; border-radius: 20px 20px 0 0; display: flex; flex-direction: column; overflow: hidden; }
+  @media (min-width: 640px) { .cct-modal-backdrop { align-items: center; } .cct-modal { border-radius: 20px; max-height: 80vh; } }
+  .cct-modal-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; border-bottom: 1px solid var(--border); }
+  .cct-modal-header h2 { font-size: 16px; margin: 0; }
+  .cct-modal-body { padding: 18px 20px; overflow-y: auto; flex: 1; }
+  .cct-modal-footer { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 20px; border-top: 1px solid var(--border); }
+  .cct-hint { font-size: 13px; color: var(--text-muted); margin: 0 0 16px; line-height: 1.6; }
+
+  /* ---- Fields ---- */
+  .cct-field { margin-bottom: 14px; position: relative; }
+  .cct-field label { display: block; font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; }
+  .cct-field input, .cct-field select, .cct-field textarea {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px;
+    background: var(--bg); color: var(--text); font-family: inherit;
+  }
+  .cct-field textarea { resize: vertical; }
+  .cct-field input:focus, .cct-field select:focus, .cct-field textarea:focus { outline: none; border-color: var(--primary); }
+  .cct-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .cct-divider { height: 1px; background: var(--border); margin: 4px 0 16px; }
+  .cct-toggle { display: flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .cct-toggle-btn { flex: 1; border: none; background: var(--bg); padding: 10px; font-size: 14px; cursor: pointer; color: var(--text-muted); }
+  .cct-toggle-btn.active { background: var(--primary); color: white; }
+  .cct-checkbox { display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); background: var(--bg); border-radius: 10px; padding: 10px 12px; font-size: 14px; color: var(--text-muted); cursor: pointer; width: 100%; }
+  .cct-checkbox.checked { color: var(--text); border-color: var(--primary); }
+  .cct-checkbox-box { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; font-size: 12px; }
+  .cct-checkbox.checked .cct-checkbox-box { background: var(--primary); border-color: var(--primary); }
+  .cct-autocomplete {
+    position: absolute; top: 100%; left: 0; right: 0; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; margin-top: 4px; max-height: 200px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.08); z-index: 20;
+  }
+  .cct-autocomplete-item { padding: 10px 14px; font-size: 14px; cursor: pointer; }
+  .cct-autocomplete-item:hover { background: var(--bg); }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* ================================================================== */
+/* 常數設定                                                            */
+/* ================================================================== */
+
+const LOGIN_PASSWORD = "65905937"; // 南倉／中倉共用
+const STORAGE_KEY_ACTIVE = "cct_active_records";
+const STORAGE_KEY_HISTORY = "cct_history_records";
+
+const CATEGORIES = [
+  { id: "approve", label: "約配未接", color: "#7C93A3" },
+  { id: "erlian", label: "二聯未接", color: "#C99B6A" },
+  { id: "complaint", label: "客訴未接", color: "#B96B6B" },
+  { id: "zilian", label: "轉自聯", color: "#8B7FA8" },
+  { id: "other", label: "其他", color: "#9B9B93" },
+];
+const CAT_MAP = Object.fromEntries(CATEGORIES.map(c => [c.id, c]));
+
+const CATEGORY_FIELDS = {
+  approve: [
+    { key: "appointmentDate", label: "目前可約配日期", type: "date" },
+    { key: "note", label: "備註", type: "textarea" },
+  ],
+  erlian: [
+    { key: "plate", label: "車牌", type: "text" },
+    { key: "eta", label: "預計抵達時間", type: "text" },
+    { key: "balance", label: "尾款", type: "checkbox" },
+  ],
+  complaint: [
+    { key: "item", label: "客訴品項", type: "text" },
+    { key: "content", label: "客訴內容", type: "textarea" },
+  ],
+  zilian: [
+    { key: "orderNumber", label: "訂單編號", type: "text" },
+    { key: "expectedDate", label: "當初預計交貨日期", type: "date" },
+    { key: "note", label: "備註", type: "textarea" },
+  ],
+  other: [{ key: "note", label: "備註", type: "textarea" }],
+};
+const CONVERT_FIELDS = CATEGORY_FIELDS.zilian;
+
+/* ---- 南倉資料 ---- */
+const RAW_AREAS_SOUTH = {
+  嘉義市: ["東區", "西區"],
+  嘉義縣: ["番路鄉","梅山鄉","竹崎鄉","阿里山鄉","中埔鄉","大埔鄉","水上鄉","鹿草鄉","太保市","朴子市","東石鄉","六腳鄉","新港鄉","民雄鄉","大林鎮","溪口鄉","義竹鄉","布袋鎮"],
+  台南市: ["中西區","東區","南區","北區","安平區","安南區","永康區","歸仁區","新化區","左鎮區","玉井區","楠西區","南化區","仁德區","關廟區","龍崎區","官田區","麻豆區","佳里區","西港區","七股區","將軍區","學甲區","北門區","新營區","後壁區","白河區","東山區","六甲區","下營區","柳營區","鹽水區","善化區","大內區","山上區","新市區","安定區"],
+  高雄市: ["鹽埕區","鼓山區","左營區","楠梓區","三民區","新興區","前金區","苓雅區","前鎮區","旗津區","小港區","鳳山區","林園區","大寮區","大樹區","大社區","仁武區","鳥松區","岡山區","橋頭區","燕巢區","田寮區","阿蓮區","路竹區","湖內區","茄萣區","永安區","彌陀區","梓官區","旗山區","美濃區","六龜區","甲仙區","杉林區","內門區","茂林區","桃源區","那瑪夏區"],
+  屏東縣: ["屏東市","潮州鎮","東港鎮","恆春鎮","萬丹鄉","長治鄉","麟洛鄉","九如鄉","里港鄉","鹽埔鄉","高樹鄉","萬巒鄉","內埔鄉","竹田鄉","新埤鄉","枋寮鄉","新園鄉","崁頂鄉","林邊鄉","南州鄉","佳冬鄉","琉球鄉","車城鄉","滿州鄉","枋山鄉","三地門鄉","霧台鄉","瑪家鄉","泰武鄉","來義鄉","春日鄉","獅子鄉","牡丹鄉"],
+  台東縣: ["台東市","成功鎮","關山鎮","卑南鄉","大武鄉","太麻里鄉","東河鄉","長濱鄉","鹿野鄉","池上鄉","綠島鄉","達仁鄉","金峰鄉","海端鄉","延平鄉","蘭嶼鄉"],
+};
+const CONTACTS_SOUTH = ["Lena念臻", "Linda采陵", "Anna芊岱", "Wendy咨汶"];
+
+/* ---- 中倉資料（尚未提供，暫時沿用南倉，待補） ---- */
+const RAW_AREAS_NORTH = RAW_AREAS_SOUTH; // TODO: 請提供中倉實際配送區域
+const CONTACTS_NORTH = CONTACTS_SOUTH;   // TODO: 請提供中倉實際負責窗口名單
+
+function formatArea(county, district) {
+  const shortCounty = county.replace(/[市縣]$/, "");
+  let label = district;
+  if (district.endsWith("區")) {
+    const stripped = district.slice(0, -1);
+    label = stripped.length === 1 ? district : stripped;
+  } else if (district.endsWith("鎮") || district.endsWith("鄉")) {
+    label = district.slice(0, -1);
+  } else if (district.endsWith("市")) {
+    const stripped = district.slice(0, -1);
+    if (stripped === shortCounty) return district;
+    label = stripped;
+  }
+  return shortCounty + label;
+}
+function buildAreaList(raw) {
+  return Object.entries(raw).flatMap(([county, districts]) => districts.map(d => formatArea(county, d)));
+}
+const WAREHOUSES = {
+  south: { name: "南倉", areas: buildAreaList(RAW_AREAS_SOUTH), contacts: CONTACTS_SOUTH },
+  north: { name: "中倉", areas: buildAreaList(RAW_AREAS_NORTH), contacts: CONTACTS_NORTH },
+};
+
+/* ================================================================== */
+/* 小工具                                                              */
+/* ================================================================== */
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+function fmtDateTime(iso) {
+  const d = new Date(iso), p = n => String(n).padStart(2, "0");
+  return `${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+function fmtDate(iso) {
+  const d = new Date(iso), p = n => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+}
+function daysSince(iso) { return Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 86400000)); }
+function esc(str) {
+  return String(str ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+/* ================================================================== */
+/* 狀態                                                                */
+/* ================================================================== */
+
+let state = {
+  authed: false,
+  warehouse: null,       // 'south' | 'north'
+  loginPickWarehouse: "south",
+  loginPwd: "",
+  loginError: "",
+
+  activeRecords: [],
+  historyRecords: [],
+
+  tab: "overview",       // overview | zilian
+  subTab: "pending",      // pending | history
+  filterCat: "all",
+  filterDate: "",
+  search: "",
+  zilianSearch: "",
+
+  showAdd: false,
+  addForm: null,
+  convertTarget: null,
+  convertForm: {},
+  areaOpenFor: null,      // 'add' | 'convert' | null，控制自動完成下拉開關
+};
+
+function loadStorage() {
+  try { state.activeRecords = JSON.parse(localStorage.getItem(STORAGE_KEY_ACTIVE) || "[]"); }
+  catch(e) { state.activeRecords = []; }
+  try { state.historyRecords = JSON.parse(localStorage.getItem(STORAGE_KEY_HISTORY) || "[]"); }
+  catch(e) { state.historyRecords = []; }
+}
+let storageAvailable = true;
+function saveActive() {
+  try {
+    localStorage.setItem(STORAGE_KEY_ACTIVE, JSON.stringify(state.activeRecords));
+    storageAvailable = true;
+  } catch (e) {
+    storageAvailable = false;
+    console.error("localStorage 寫入失敗：", e);
+    alert("資料儲存失敗！\n\n這個瀏覽器環境擋掉了本機儲存功能（常見於直接雙擊開啟 HTML 檔案時）。\n\n請改用「用瀏覽器開啟」的方式開啟此檔案（例如把檔案拖進已開啟的 Chrome 視窗），或先架設一個簡易本機伺服器再開啟測試。");
+  }
+}
+function saveHistory() {
+  try {
+    localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(state.historyRecords));
+    storageAvailable = true;
+  } catch (e) {
+    storageAvailable = false;
+    console.error("localStorage 寫入失敗：", e);
+  }
+}
+
+function freshAddForm() {
+  return { category: "approve", phoneLast3: "", lastName: "", gender: "先生", area: "", contact: WAREHOUSES[state.warehouse].contacts[0], fields: {} };
+}
+
+/* ================================================================== */
+/* 動作                                                                */
+/* ================================================================== */
+
+function doLogin() {
+  if (state.loginPwd === LOGIN_PASSWORD) {
+    state.warehouse = state.loginPickWarehouse;
+    state.authed = true;
+    state.loginError = "";
+    loadStorage();
+  } else {
+    state.loginError = "密碼錯誤，請再試一次";
+  }
+  render();
+}
+function doLogout() { state.authed = false; state.loginPwd = ""; render(); }
+
+function openAdd() { state.showAdd = true; state.addForm = freshAddForm(); render(); }
+function closeAdd() { state.showAdd = false; state.addForm = null; render(); }
+function saveAdd() {
+  const f = state.addForm;
+  if (!f.phoneLast3.trim()) {
+    const input = document.getElementById("phoneInput");
+    const err = document.getElementById("phoneError");
+    if (err) err.style.display = "block";
+    if (input) { input.style.borderColor = "#B96B6B"; input.focus(); }
+    return;
+  }
+  const record = {
+    id: uid(), warehouse: state.warehouse, category: f.category, createdAt: new Date().toISOString(),
+    phoneLast3: f.phoneLast3.trim(), lastName: f.lastName.trim(), gender: f.gender,
+    area: f.area, contact: f.contact, fields: f.fields,
+  };
+  state.activeRecords.unshift(record);
+  saveActive();
+  closeAdd();
+}
+
+function markDone(id) {
+  const record = state.activeRecords.find(r => r.id === id);
+  if (!record) return;
+  state.activeRecords = state.activeRecords.filter(r => r.id !== id);
+  if (record.category === "zilian") {
+    state.historyRecords.unshift({ ...record, resolvedAt: new Date().toISOString() });
+    saveHistory();
+  }
+  saveActive();
+  render();
+}
+
+function openConvert(id) {
+  const record = state.activeRecords.find(r => r.id === id);
+  if (!record) return;
+  state.convertTarget = record;
+  state.convertForm = {};
+  render();
+}
+function closeConvert() { state.convertTarget = null; state.convertForm = {}; render(); }
+function confirmConvert() {
+  const record = state.convertTarget;
+  state.activeRecords = state.activeRecords.filter(r => r.id !== record.id);
+  const converted = {
+    id: uid(), warehouse: state.warehouse, category: "zilian",
+    createdAt: record.createdAt, convertedAt: new Date().toISOString(),
+    phoneLast3: record.phoneLast3, lastName: record.lastName, gender: record.gender,
+    area: record.area, contact: record.contact, fields: { ...state.convertForm },
+  };
+  state.activeRecords.unshift(converted);
+  saveActive();
+  closeConvert();
+}
+
+/* ================================================================== */
+/* 篩選運算                                                            */
+/* ================================================================== */
+
+function getOverviewList() {
+  return state.activeRecords
+    .filter(r => r.warehouse === state.warehouse)
+    .filter(r => state.filterCat === "all" ? true : r.category === state.filterCat)
+    .filter(r => state.filterDate ? fmtDate(r.createdAt) === state.filterDate : true)
+    .filter(r => state.search ? r.phoneLast3.includes(state.search) : true)
+    .sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+}
+function getZilianPending() {
+  return state.activeRecords
+    .filter(r => r.warehouse === state.warehouse && r.category === "zilian")
+    .filter(r => state.zilianSearch ? (r.phoneLast3.includes(state.zilianSearch) || (r.fields.orderNumber||"").includes(state.zilianSearch)) : true)
+    .sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+}
+function getZilianHistory() {
+  return state.historyRecords
+    .filter(r => r.warehouse === state.warehouse)
+    .filter(r => state.zilianSearch ? (r.phoneLast3.includes(state.zilianSearch) || (r.fields.orderNumber||"").includes(state.zilianSearch)) : true)
+    .sort((a,b) => new Date(b.resolvedAt) - new Date(a.resolvedAt));
+}
+
+/* ================================================================== */
+/* 畫面渲染                                                            */
+/* ================================================================== */
+
+function render() {
+  const app = document.getElementById("app");
+  app.innerHTML = state.authed ? renderMain() : renderLogin();
+  bindEvents();
+}
+
+function renderLogin() {
+  return `
+    <div class="cct-login-screen">
+      <div class="cct-login-card">
+        <div class="cct-logo">CCT</div>
+        <h1>客服快速聯絡網</h1>
+        <p class="cct-login-sub">請選擇倉別並輸入密碼</p>
+        <div class="cct-wh-picker">
+          <button type="button" class="cct-wh-btn ${state.loginPickWarehouse==='south'?'active':''}" data-act="pick-wh" data-wh="south">南倉</button>
+          <button type="button" class="cct-wh-btn ${state.loginPickWarehouse==='north'?'active':''}" data-act="pick-wh" data-wh="north">中倉</button>
+        </div>
+        <input type="password" id="loginPwdInput" placeholder="請輸入通關密碼" value="${esc(state.loginPwd)}" />
+        ${state.loginError ? `<div class="cct-login-error">${esc(state.loginError)}</div>` : ""}
+        <button type="button" class="cct-btn cct-btn-primary cct-login-btn" data-act="login">登入</button>
+      </div>
+    </div>
+  `;
+}
+
+function catChip(cat, active, extraAttrs) {
+  return `<button type="button" class="cct-cat-chip ${active?'active':''}" style="--chip-color:${cat.color}" ${extraAttrs}>${esc(cat.label)}</button>`;
+}
+
+function renderMain() {
+  const wh = WAREHOUSES[state.warehouse];
+  return `
+    <header class="cct-header">
+      <div class="cct-header-left">
+        <div class="cct-logo cct-logo-sm">CCT</div>
+        <div>
+          <div class="cct-header-title">客服快速聯絡網</div>
+          <div class="cct-header-sub">${esc(wh.name)}（本機測試版）</div>
+        </div>
+      </div>
+      <button type="button" class="cct-icon-btn" data-act="logout" title="登出">登出</button>
+    </header>
+    <nav class="cct-tabs">
+      <button type="button" class="cct-tab ${state.tab==='overview'?'active':''}" data-act="tab" data-tab="overview">總覽</button>
+      <button type="button" class="cct-tab ${state.tab==='zilian'?'active':''}" data-act="tab" data-tab="zilian">轉自聯</button>
+    </nav>
+    <main class="cct-main">
+      ${state.tab === "overview" ? renderOverview() : renderZilian()}
+    </main>
+    <button type="button" class="cct-fab" data-act="open-add">＋</button>
+    ${state.showAdd ? renderAddModal() : ""}
+    ${state.convertTarget ? renderConvertModal() : ""}
+  `;
+}
+
+function renderOverview() {
+  const list = getOverviewList();
+  return `
+    <div class="cct-filter-bar">
+      <div class="cct-search-box">
+        🔍 <input type="text" inputmode="numeric" maxlength="3" placeholder="搜尋末三碼" id="searchInput" value="${esc(state.search)}" data-act="search" />
+      </div>
+      <div class="cct-date-box">
+        📅 <input type="date" id="dateInput" value="${esc(state.filterDate)}" data-act="filterDate" />
+        ${state.filterDate ? `<button type="button" class="cct-clear-date" data-act="clearDate">✕</button>` : ""}
+      </div>
+    </div>
+    <div class="cct-cat-filter">
+      <button type="button" class="cct-cat-chip ${state.filterCat==='all'?'active':''}" style="--chip-color:#4A4A4E" data-act="filterCat" data-cat="all">全部</button>
+      ${CATEGORIES.map(c => catChip(c, state.filterCat===c.id, `data-act="filterCat" data-cat="${c.id}"`)).join("")}
+    </div>
+    ${list.length === 0
+      ? `<div class="cct-empty">目前沒有符合條件的未處理紀錄</div>`
+      : `<div class="cct-list">${list.map(r => renderCard(r, r.category !== "zilian", false)).join("")}</div>`
+    }
+  `;
+}
+
+function renderZilian() {
+  const list = state.subTab === "pending" ? getZilianPending() : getZilianHistory();
+  return `
+    <nav class="cct-subtabs">
+      <button type="button" class="cct-subtab ${state.subTab==='pending'?'active':''}" data-act="subtab" data-subtab="pending">待處理 (${getZilianPending().length})</button>
+      <button type="button" class="cct-subtab ${state.subTab==='history'?'active':''}" data-act="subtab" data-subtab="history">歷史查詢</button>
+    </nav>
+    <div class="cct-search-box cct-search-wide">
+      🔍 <input type="text" placeholder="搜尋末三碼或訂單編號" id="zilianSearchInput" value="${esc(state.zilianSearch)}" data-act="zilianSearch" />
+    </div>
+    ${list.length === 0
+      ? `<div class="cct-empty">${state.subTab==='pending' ? '目前沒有待處理的轉自聯紀錄' : '沒有符合的歷史紀錄'}</div>`
+      : `<div class="cct-list">${list.map(r => renderCard(r, false, state.subTab==='history')).join("")}</div>`
+    }
+  `;
+}
+
+function renderCard(record, showConvert, resolved) {
+  const cat = CAT_MAP[record.category];
+  const fieldDefs = CATEGORY_FIELDS[record.category];
+  const days = daysSince(record.createdAt);
+  const extras = fieldDefs.map(f => {
+    const v = record.fields?.[f.key];
+    if (f.type === "checkbox") {
+      if (!v) return "";
+      return `<div class="cct-extra-item"><span class="cct-balance-badge">✓ 有${esc(f.label)}</span></div>`;
+    }
+    if (!v) return "";
+    return `<div class="cct-extra-item"><span class="cct-extra-label">${esc(f.label)}</span><span class="cct-extra-value">${esc(v)}</span></div>`;
+  }).join("");
+  const hasExtra = extras.trim().length > 0;
+
+  return `
+    <div class="cct-card" style="--cat-color:${cat.color}">
+      <div class="cct-card-bar"></div>
+      <div class="cct-card-body">
+        <div class="cct-card-top">
+          <span class="cct-tag" style="background:${cat.color}">${esc(cat.label)}</span>
+          <span class="cct-card-time">🕓 ${fmtDateTime(record.createdAt)}
+            ${!resolved && days >= 1 ? `<span class="cct-age-badge">已等 ${days} 天</span>` : ""}
+          </span>
+        </div>
+        <div class="cct-card-main">
+          <span class="cct-phone">📞 ${esc(record.phoneLast3)}</span>
+          <span class="cct-name">${esc(record.lastName || "—")}${esc(record.gender)}</span>
+          <span class="cct-area">${esc(record.area || "未填區域")}</span>
+          <span class="cct-contact">窗口：${esc(record.contact)}</span>
+        </div>
+        ${hasExtra ? `<div class="cct-card-extra">${extras}</div>` : ""}
+        ${resolved && record.resolvedAt ? `<div class="cct-resolved-note">已於 ${fmtDate(record.resolvedAt)} 完成處理</div>` : ""}
+        ${!resolved ? `
+          <div class="cct-card-actions">
+            ${showConvert ? `<button type="button" class="cct-btn cct-btn-outline" data-act="convert" data-id="${record.id}">⇄ 轉入自聯</button>` : ""}
+            <button type="button" class="cct-btn cct-btn-primary" data-act="done" data-id="${record.id}">✓ 標記已處理</button>
+          </div>` : ""}
+      </div>
+    </div>
+  `;
+}
+
+function renderDynamicField(field, value, scope) {
+  const val = value || "";
+  if (field.type === "textarea") {
+    return `<div class="cct-field"><label>${esc(field.label)}</label><textarea rows="2" data-scope="${scope}" data-key="${field.key}" data-act="field">${esc(val)}</textarea></div>`;
+  }
+  if (field.type === "checkbox") {
+    const checked = !!value;
+    return `
+      <div class="cct-field">
+        <label>${esc(field.label)}</label>
+        <button type="button" class="cct-checkbox ${checked?'checked':''}" data-scope="${scope}" data-key="${field.key}" data-act="checkbox">
+          <span class="cct-checkbox-box">${checked ? "✓" : ""}</span>
+          ${checked ? `有${esc(field.label)}` : `無${esc(field.label)}`}
+        </button>
+      </div>`;
+  }
+  return `<div class="cct-field"><label>${esc(field.label)}</label><input type="${field.type==='date'?'date':'text'}" value="${esc(val)}" data-scope="${scope}" data-key="${field.key}" data-act="field" /></div>`;
+}
+
+function renderAreaField(scope, value) {
+  return `
+    <div class="cct-field">
+      <label>配送區域</label>
+      <input type="text" id="area-input-${scope}" placeholder="輸入關鍵字，如「善化」" value="${esc(value)}" data-scope="${scope}" data-act="areaInput" autocomplete="off" />
+      <div class="cct-autocomplete-slot" id="area-dropdown-${scope}"></div>
+    </div>
+  `;
+}
+
+// 只更新自動完成下拉清單本身，不動到輸入框，避免打字卡頓／失焦
+function updateAreaDropdown(scope) {
+  const container = document.getElementById(`area-dropdown-${scope}`);
+  if (!container) return;
+  const value = scope === "add" ? state.addForm.area : state.convertForm.area;
+  const wh = WAREHOUSES[state.warehouse];
+  const matches = value ? wh.areas.filter(a => a.includes(value)).slice(0, 8) : [];
+
+  if (matches.length === 0) {
+    container.innerHTML = "";
+    container.classList.remove("cct-autocomplete");
+    return;
+  }
+  container.classList.add("cct-autocomplete");
+  container.innerHTML = matches
+    .map(m => `<div class="cct-autocomplete-item" data-value="${esc(m)}">${esc(m)}</div>`)
+    .join("");
+  container.querySelectorAll(".cct-autocomplete-item").forEach(item => {
+    item.onmousedown = (e) => {
+      e.preventDefault(); // 避免 blur 搶先觸發，導致點擊失效
+      const v = item.dataset.value;
+      if (scope === "add") state.addForm.area = v; else state.convertForm.area = v;
+      const inputEl = document.getElementById(`area-input-${scope}`);
+      if (inputEl) inputEl.value = v;
+      container.innerHTML = "";
+      container.classList.remove("cct-autocomplete");
+    };
+  });
+}
+
+function renderAddModal() {
+  const f = state.addForm;
+  const wh = WAREHOUSES[state.warehouse];
+  const fields = CATEGORY_FIELDS[f.category];
+  return `
+    <div class="cct-modal-backdrop" data-act="backdrop-add">
+      <div class="cct-modal" data-stop="1">
+        <div class="cct-modal-header"><h2>新增未接紀錄</h2><button type="button" class="cct-icon-btn" data-act="close-add">✕</button></div>
+        <div class="cct-modal-body">
+          <div class="cct-field">
+            <label>大分類</label>
+            <div class="cct-cat-picker">
+              ${CATEGORIES.map(c => catChip(c, f.category===c.id, `data-act="pickCat" data-cat="${c.id}"`)).join("")}
+            </div>
+          </div>
+          <div class="cct-grid-2">
+            <div class="cct-field">
+              <label>電話末三碼</label>
+              <input type="text" id="phoneInput" inputmode="numeric" maxlength="3" value="${esc(f.phoneLast3)}" data-act="addPhone" placeholder="123" />
+              <div class="cct-login-error" id="phoneError" style="display:none;margin-top:4px;margin-bottom:0;">請先輸入電話末三碼</div>
+            </div>
+            <div class="cct-field">
+              <label>顧客姓氏</label>
+              <input type="text" value="${esc(f.lastName)}" data-act="addLastName" placeholder="王" />
+            </div>
+          </div>
+          <div class="cct-grid-2">
+            <div class="cct-field">
+              <label>稱謂</label>
+              <div class="cct-toggle">
+                <button type="button" class="cct-toggle-btn ${f.gender==='先生'?'active':''}" data-act="addGender" data-g="先生">先生</button>
+                <button type="button" class="cct-toggle-btn ${f.gender==='小姐'?'active':''}" data-act="addGender" data-g="小姐">小姐</button>
+              </div>
+            </div>
+            <div class="cct-field">
+              <label>負責窗口</label>
+              <select data-act="addContact">
+                ${wh.contacts.map(c => `<option value="${esc(c)}" ${f.contact===c?'selected':''}>${esc(c)}</option>`).join("")}
+              </select>
+            </div>
+          </div>
+          ${renderAreaField("add", f.area)}
+          <div class="cct-divider"></div>
+          ${fields.map(fd => renderDynamicField(fd, f.fields[fd.key], "add")).join("")}
+        </div>
+        <div class="cct-modal-footer">
+          <button type="button" class="cct-btn cct-btn-ghost" data-act="close-add">取消</button>
+          <button type="button" class="cct-btn cct-btn-primary" data-act="save-add">✓ 儲存</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderConvertModal() {
+  const record = state.convertTarget;
+  return `
+    <div class="cct-modal-backdrop" data-act="backdrop-convert">
+      <div class="cct-modal" data-stop="1">
+        <div class="cct-modal-header"><h2>轉入自聯</h2><button type="button" class="cct-icon-btn" data-act="close-convert">✕</button></div>
+        <div class="cct-modal-body">
+          <p class="cct-hint">末三碼 ${esc(record.phoneLast3)}・${esc(record.lastName||"—")}${esc(record.gender)}・${esc(record.area||"—")} 將轉為「轉自聯」分類，請補上以下資訊：</p>
+          ${CONVERT_FIELDS.map(fd => renderDynamicField(fd, state.convertForm[fd.key], "convert")).join("")}
+        </div>
+        <div class="cct-modal-footer">
+          <button type="button" class="cct-btn cct-btn-ghost" data-act="close-convert">取消</button>
+          <button type="button" class="cct-btn cct-btn-primary" data-act="confirm-convert">⇄ 確認轉入</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/* ================================================================== */
+/* 事件綁定（每次 render 後重新綁定）                                   */
+/* ================================================================== */
+
+function bindEvents() {
+  const app = document.getElementById("app");
+
+  app.querySelectorAll('[data-act]').forEach(el => {
+    const act = el.dataset.act;
+
+    if (act === "pick-wh") el.onclick = () => { state.loginPickWarehouse = el.dataset.wh; render(); };
+    if (act === "login") el.onclick = () => doLogin();
+    if (act === "logout") el.onclick = () => doLogout();
+    if (act === "tab") el.onclick = () => { state.tab = el.dataset.tab; render(); };
+    if (act === "subtab") el.onclick = () => { state.subTab = el.dataset.subtab; render(); };
+    if (act === "filterCat") el.onclick = () => { state.filterCat = el.dataset.cat; render(); };
+    if (act === "clearDate") el.onclick = () => { state.filterDate = ""; render(); };
+    if (act === "open-add") el.onclick = () => openAdd();
+    if (act === "close-add") el.onclick = () => closeAdd();
+    if (act === "backdrop-add") el.onclick = (e) => { if (e.target === el) closeAdd(); };
+    if (act === "save-add") el.onclick = () => saveAdd();
+    if (act === "pickCat") el.onclick = () => { state.addForm.category = el.dataset.cat; state.addForm.fields = {}; render(); };
+    if (act === "addGender") el.onclick = () => { state.addForm.gender = el.dataset.g; render(); };
+    if (act === "done") el.onclick = () => markDone(el.dataset.id);
+    if (act === "convert") el.onclick = () => openConvert(el.dataset.id);
+    if (act === "close-convert") el.onclick = () => closeConvert();
+    if (act === "backdrop-convert") el.onclick = (e) => { if (e.target === el) closeConvert(); };
+    if (act === "confirm-convert") el.onclick = () => confirmConvert();
+    if (act === "checkbox") el.onclick = () => {
+      const scope = el.dataset.scope, key = el.dataset.key;
+      const target = scope === "add" ? state.addForm.fields : state.convertForm;
+      target[key] = !target[key];
+      render();
+    };
+  });
+
+  // 一般輸入框（不會每個字都重render，用 blur/input 分開處理，維持游標位置）
+  const searchInput = app.querySelector("#searchInput");
+  if (searchInput) searchInput.oninput = (e) => { state.search = e.target.value.replace(/[^0-9]/g, ""); renderListOnly(); };
+
+  const dateInput = app.querySelector("#dateInput");
+  if (dateInput) dateInput.onchange = (e) => { state.filterDate = e.target.value; render(); };
+
+  const zilianSearchInput = app.querySelector("#zilianSearchInput");
+  if (zilianSearchInput) zilianSearchInput.oninput = (e) => { state.zilianSearch = e.target.value; renderListOnly(); };
+
+  const loginPwdInput = app.querySelector("#loginPwdInput");
+  if (loginPwdInput) {
+    loginPwdInput.oninput = (e) => { state.loginPwd = e.target.value; state.loginError = ""; };
+    loginPwdInput.onkeydown = (e) => { if (e.key === "Enter") doLogin(); };
+  }
+
+  app.querySelectorAll('[data-act="addPhone"]').forEach(el => {
+    el.oninput = (e) => {
+      state.addForm.phoneLast3 = e.target.value.replace(/[^0-9]/g, "");
+      e.target.value = state.addForm.phoneLast3;
+      el.style.borderColor = "";
+      const err = document.getElementById("phoneError");
+      if (err) err.style.display = "none";
+    };
+  });
+  app.querySelectorAll('[data-act="addLastName"]').forEach(el => { el.oninput = (e) => { state.addForm.lastName = e.target.value; }; });
+  app.querySelectorAll('[data-act="addContact"]').forEach(el => { el.onchange = (e) => { state.addForm.contact = e.target.value; }; });
+
+  app.querySelectorAll('[data-act="field"]').forEach(el => {
+    el.oninput = (e) => {
+      const scope = el.dataset.scope, key = el.dataset.key;
+      const target = scope === "add" ? state.addForm.fields : state.convertForm;
+      target[key] = e.target.value;
+    };
+  });
+
+  app.querySelectorAll('[data-act="areaInput"]').forEach(el => {
+    const scope = el.dataset.scope;
+    el.oninput = (e) => {
+      if (scope === "add") state.addForm.area = e.target.value; else state.convertForm.area = e.target.value;
+      updateAreaDropdown(scope);
+    };
+    el.onfocus = () => updateAreaDropdown(scope);
+    el.onblur = () => {
+      // 延遲清空，讓下拉選項的 mousedown 有機會先觸發
+      setTimeout(() => {
+        const container = document.getElementById(`area-dropdown-${scope}`);
+        if (container) { container.innerHTML = ""; container.classList.remove("cct-autocomplete"); }
+      }, 150);
+    };
+  });
+}
+
+// 搜尋框輸入時只重繪清單區塊，避免整頁重render導致輸入框失焦
+function renderListOnly() {
+  if (state.tab === "overview") {
+    const mainEl = document.querySelector(".cct-main");
+    const activeEl = document.activeElement;
+    const cursorPos = activeEl && activeEl.selectionStart;
+    const wasSearch = activeEl && activeEl.id === "searchInput";
+    mainEl.innerHTML = renderOverview();
+    bindEvents();
+    if (wasSearch) {
+      const again = document.querySelector("#searchInput");
+      if (again) { again.focus(); if (cursorPos != null) again.setSelectionRange(cursorPos, cursorPos); }
+    }
+  } else {
+    const mainEl = document.querySelector(".cct-main");
+    const activeEl = document.activeElement;
+    const cursorPos = activeEl && activeEl.selectionStart;
+    const wasSearch = activeEl && activeEl.id === "zilianSearchInput";
+    mainEl.innerHTML = renderZilian();
+    bindEvents();
+    if (wasSearch) {
+      const again = document.querySelector("#zilianSearchInput");
+      if (again) { again.focus(); if (cursorPos != null) again.setSelectionRange(cursorPos, cursorPos); }
+    }
+  }
+}
+
+/* ================================================================== */
+/* 啟動                                                                */
+/* ================================================================== */
+
+render();
+</script>
+</body>
+</html>
