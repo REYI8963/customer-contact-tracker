@@ -163,9 +163,17 @@
   .cct-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
   .cct-card-bar { width: 6px; background: var(--cat-color); flex-shrink: 0; }
   .cct-card-body { padding: 16px; flex: 1; display: flex; flex-direction: column; }
-  .cct-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-  .cct-tag { color: white; font-size: 12px; font-weight: 800; padding: 3px 12px; border-radius: 999px; letter-spacing: 0.02em; }
-  .cct-card-time { font-size: 12px; color: var(--text-muted); font-weight: 600; display: flex; align-items: center; gap: 4px; }
+  .cct-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+  .cct-tag {
+    color: white; font-size: 12px; font-weight: 800; padding: 4px 12px; border-radius: 999px;
+    letter-spacing: 0.02em; white-space: nowrap; flex-shrink: 0; line-height: 1.2;
+  }
+  .cct-order-tag {
+    background: #EFF6FF; color: #2563EB; border: 1px solid #BFDBFE; font-size: 12px; font-weight: 800;
+    padding: 3px 10px; border-radius: 8px; white-space: nowrap; max-width: 160px; overflow: hidden;
+    text-overflow: ellipsis; display: inline-block; line-height: 1.3;
+  }
+  .cct-card-time { font-size: 12px; color: var(--text-muted); font-weight: 600; display: flex; align-items: center; gap: 4px; white-space: nowrap; flex-shrink: 0; }
   .cct-age-badge { background: #FFF7ED; color: #C2410C; border: 1px solid #FFEDD5; font-weight: 800; padding: 2px 8px; border-radius: 999px; margin-left: 6px; font-size: 11px; }
   .cct-card-main { display: flex; flex-wrap: wrap; gap: 8px 12px; font-size: 13.5px; margin-bottom: 10px; align-items: center; }
   .cct-phone { font-weight: 800; color: #0F172A; font-size: 15px; }
@@ -313,9 +321,15 @@ const ERLIAN_SUBTYPES = [
 ];
 const ERLIAN_SUB_MAP = Object.fromEntries(ERLIAN_SUBTYPES.map(s => [s.id, s]));
 
-const PLATE_OPTIONS = ["展", "陳", "9119", "3857", "6852"];
+const PLATE_OPTIONS_SOUTH = ["展", "陳", "9119", "3857", "6852"];
+const PLATE_OPTIONS_NORTH = ["5522", "5727", "2027", "7603", "6952"];
 
-function getCategoryFields(category, erlianSubType = "delivery") {
+function getPlateOptions(warehouse) {
+  return warehouse === "north" ? PLATE_OPTIONS_NORTH : PLATE_OPTIONS_SOUTH;
+}
+
+function getCategoryFields(category, erlianSubType = "delivery", warehouse = "south") {
+  const plateList = getPlateOptions(warehouse);
   if (category === "approve") {
     return [
       { key: "availableTrip", label: "目前可提供車趟", type: "text" },
@@ -326,7 +340,7 @@ function getCategoryFields(category, erlianSubType = "delivery") {
     if (erlianSubType === "delivery") {
       return [
         { key: "scheduledDate", label: "約定配送日期", type: "date" },
-        { key: "plate", label: "車牌", type: "datalist", options: PLATE_OPTIONS },
+        { key: "plate", label: "車牌", type: "datalist", options: plateList },
         { key: "eta", label: "預計抵達時間", type: "text" },
         { key: "balance", label: "尾款", type: "checkbox" },
         { key: "note", label: "備註", type: "textarea" },
@@ -336,7 +350,7 @@ function getCategoryFields(category, erlianSubType = "delivery") {
       return [
         { key: "scheduledDate", label: "升級約定日期", type: "date" },
         { key: "scheduledTime", label: "安排時段", type: "text" },
-        { key: "plate", label: "車牌", type: "datalist", options: PLATE_OPTIONS },
+        { key: "plate", label: "車牌", type: "datalist", options: plateList },
         { key: "balance", label: "尾款", type: "checkbox" },
         { key: "note", label: "備註", type: "textarea" },
       ];
@@ -360,15 +374,12 @@ function getCategoryFields(category, erlianSubType = "delivery") {
   }
   if (category === "zilian") {
     return [
-      { key: "orderNumber", label: "訂單編號", type: "text" },
       { key: "expectedDate", label: "當初預計交貨日期", type: "date" },
       { key: "note", label: "備註", type: "textarea" },
     ];
   }
   return [{ key: "note", label: "備註", type: "textarea" }];
 }
-
-const CONVERT_FIELDS = getCategoryFields("zilian");
 
 const RAW_AREAS_SOUTH = {
   嘉義市: ["東區", "西區"],
@@ -378,8 +389,18 @@ const RAW_AREAS_SOUTH = {
   屏東縣: ["屏東市","潮州鎮","東港鎮","恆春鎮","萬丹鄉","長治鄉","麟洛鄉","九如鄉","里港鄉","鹽埔鄉","高樹鄉","萬巒鄉","內埔鄉","竹田鄉","新埤鄉","枋寮鄉","新園鄉","崁頂鄉","林邊鄉","南州鄉","佳冬鄉","琉球鄉","車城鄉","滿州鄉","枋山鄉","三地門鄉","霧台鄉","瑪家鄉","泰武鄉","來義鄉","春日鄉","獅子鄉","牡丹鄉"],
   台東縣: ["台東市","成功鎮","關山鎮","卑南鄉","大武鄉","太麻里鄉","東河鄉","長濱鄉","鹿野鄉","池上鄉","綠島鄉","達仁鄉","金峰鄉","海端鄉","延平鄉","蘭嶼鄉"],
 };
+
+const RAW_AREAS_NORTH = {
+  新竹市: ["東區", "北區", "香山區"],
+  新竹縣: ["竹北市", "竹東鎮", "新埔鎮", "關西鎮", "湖口鄉", "新豐鄉", "芎林鄉", "橫山鄉", "北埔鄉", "寶山鄉", "峨眉鄉", "尖石鄉", "五峰鄉"],
+  苗栗縣: ["苗栗市", "頭份市", "竹南鎮", "後龍鎮", "通霄鎮", "苑裡鎮", "卓蘭鎮", "造橋鄉", "西湖鄉", "頭屋鄉", "公館鄉", "銅鑼鄉", "三義鄉", "大湖鄉", "獅潭鄉", "三灣鄉", "南庄鄉", "泰安鄉"],
+  台中市: ["中區", "東區", "南區", "西區", "北區", "北屯區", "西屯區", "南屯區", "太平區", "大里區", "霧峰區", "烏日區", "豐原區", "后里區", "石岡區", "東勢區", "和平區", "新社區", "潭子區", "大雅區", "大雅區", "神岡區", "大肚區", "沙鹿區", "龍井區", "梧棲區", "清水區", "大甲區", "外埔區", "大安區"],
+  南投縣: ["南投市", "埔里鎮", "草屯鎮", "竹山鎮", "集集鎮", "名間鄉", "鹿谷鄉", "中寮鄉", "魚池鄉", "國姓鄉", "水里鄉", "信義鄉", "仁愛鄉"],
+  彰化縣: ["彰化市", "員林市", "和美鎮", "鹿港鎮", "溪湖鎮", "二林鎮", "田中鎮", "北斗鎮", "花壇鄉", "芬園鄉", "大村鄉", "永靖鄉", "伸港鄉", "線西鄉", "福興鄉", "秀水鄉", "埔心鄉", "埔鹽鄉", "大城鄉", "芳苑鄉", "竹塘鄉", "社頭鄉", "二水鄉", "田尾鄉", "埤頭鄉", "溪州鄉"],
+  雲林縣: ["斗六市", "斗南鎮", "虎尾鎮", "西螺鎮", "土庫鎮", "北港鎮", "古坑鄉", "大埤鄉", "莿桐鄉", "林內鄉", "二崙鄉", "崙背鄉", "麥寮鄉", "東勢鄉", "褒忠鄉", "臺西鄉", "元長鄉", "四湖鄉", "口湖鄉", "水林鄉"],
+};
+
 const CONTACTS_SOUTH = ["Lena念臻", "Linda采陵", "Anna芊岱", "Wendy咨汶"];
-const RAW_AREAS_NORTH = RAW_AREAS_SOUTH;
 const CONTACTS_NORTH = ["Alani", "怡如", "Ting", "Jess"];
 
 function formatArea(county, district) {
@@ -441,8 +462,8 @@ function generateChatTemplate(record, scenario = "standard") {
   const f = record.fields || {};
   const areaText = record.area || "未填寫";
   const nameText = `${record.lastName || ""}${record.gender || ""}`.trim() || "顧客";
-  const orderText = record.orderNumber ? `#${record.orderNumber}` : "#";
-  const phoneText = record.phone ? `${record.phone} (末三碼 ${record.phoneLast3})` : `末三碼 ${record.phoneLast3}`;
+  const orderText = record.orderNumber ? `#${record.orderNumber}` : (f.orderNumber ? `#${f.orderNumber}` : "#");
+  const phoneText = record.phone || record.phoneLast3 || "未提供";
 
   if (record.category === "approve") {
     return `@\n訂單：${orderText}\n客戶姓名：${nameText}\n電話：${phoneText}\n因多日致電約配皆轉語音信箱，備用電話也無法聯繫上\n目前可提供車趟為：${f.availableTrip || ""}\n再麻煩與客確認當天是否方便收貨 謝謝\n(車趟可保留至前)`;
@@ -549,7 +570,7 @@ function initSync() {
     fetchCloudData();
     setInterval(() => {
       fetchCloudData(true);
-    }, 6000); // 每 6 秒背景自動與試算表比對更新
+    }, 6000);
   }
 }
 
@@ -958,7 +979,7 @@ function renderZilian() {
 
 function renderCard(record, showConvert, resolved) {
   const cat = CAT_MAP[record.category] || { label: "其他", color: "#9B9B93" };
-  const fieldDefs = getCategoryFields(record.category, record.erlianSubType);
+  const fieldDefs = getCategoryFields(record.category, record.erlianSubType, record.warehouse);
   const days = daysSince(record.createdAt);
   
   let catLabel = cat.label;
@@ -991,9 +1012,9 @@ function renderCard(record, showConvert, resolved) {
       <div class="cct-card-bar"></div>
       <div class="cct-card-body">
         <div class="cct-card-top">
-          <div style="display:flex;align-items:center;gap:6px;">
+          <div style="display:flex;align-items:center;gap:6px;min-width:0;flex-wrap:wrap;">
             <span class="cct-tag" style="background:${cardColor}">${esc(catLabel)}</span>
-            ${orderDisplay ? `<span style="font-size:12px;font-weight:800;color:#3B82F6;background:#EFF6FF;padding:2px 8px;border-radius:6px;">${esc(orderDisplay)}</span>` : ""}
+            ${orderDisplay ? `<span class="cct-order-tag" title="${esc(orderDisplay)}">${esc(orderDisplay)}</span>` : ""}
           </div>
           <span class="cct-card-time">🕓 ${fmtDateTime(record.createdAt)}
             ${!resolved && days >= 1 ? `<span class="cct-age-badge">已等 ${days} 天</span>` : ""}
@@ -1063,7 +1084,7 @@ function renderAreaField(scope, value) {
   return `
     <div class="cct-field">
       <label>配送區域</label>
-      <input type="text" id="area-input-${scope}" placeholder="輸入關鍵字，如「善化」" value="${esc(value)}" data-scope="${scope}" data-act="areaInput" autocomplete="off" />
+      <input type="text" id="area-input-${scope}" placeholder="輸入關鍵字，如「善化」、「竹北」" value="${esc(value)}" data-scope="${scope}" data-act="areaInput" autocomplete="off" />
       <div class="cct-autocomplete-slot" id="area-dropdown-${scope}"></div>
     </div>
   `;
@@ -1108,7 +1129,7 @@ function updateAreaDropdown(scope) {
 function renderAddModal() {
   const f = state.addForm;
   const wh = WAREHOUSES[state.warehouse];
-  const fields = getCategoryFields(f.category, f.erlianSubType);
+  const fields = getCategoryFields(f.category, f.erlianSubType, state.warehouse);
   return `
     <div class="cct-modal-backdrop" data-act="backdrop-add">
       <div class="cct-modal" data-stop="1">
@@ -1178,7 +1199,7 @@ function renderAddModal() {
 function renderEditModal() {
   const f = state.editForm;
   const wh = WAREHOUSES[state.warehouse];
-  const fields = getCategoryFields(f.category, f.erlianSubType);
+  const fields = getCategoryFields(f.category, f.erlianSubType, state.warehouse);
   return `
     <div class="cct-modal-backdrop" data-act="backdrop-edit">
       <div class="cct-modal" data-stop="1">
@@ -1282,6 +1303,8 @@ function renderChatModal() {
 
 function renderConvertModal() {
   const record = state.convertTarget;
+  const wh = WAREHOUSES[state.warehouse];
+  const fields = getCategoryFields("zilian", "delivery", state.warehouse);
   return `
     <div class="cct-modal-backdrop" data-act="backdrop-convert">
       <div class="cct-modal" data-stop="1">
@@ -1292,7 +1315,7 @@ function renderConvertModal() {
             <label>訂單編號</label>
             <input type="text" data-scope="convert" data-key="orderNumber" data-act="field" value="${esc(state.convertForm.orderNumber || record.orderNumber || '')}" placeholder="請輸入訂單編號" />
           </div>
-          ${CONVERT_FIELDS.filter(fd => fd.key !== 'orderNumber').map(fd => renderDynamicField(fd, state.convertForm[fd.key], "convert")).join("")}
+          ${fields.map(fd => renderDynamicField(fd, state.convertForm[fd.key], "convert")).join("")}
         </div>
         <div class="cct-modal-footer">
           <button type="button" class="cct-btn cct-btn-ghost" data-act="close-convert">取消</button>
