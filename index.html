@@ -589,6 +589,14 @@ function freshAddForm() {
   };
 }
 
+// 安全取得完整電話與末三碼（確保 0 開頭不消失）
+function normalizePhone(rawPhone) {
+  const p = String(rawPhone || "").trim();
+  if (!p) return { phone: "", phoneLast3: "" };
+  let last3 = p.length >= 3 ? p.slice(-3) : p.padStart(3, "0");
+  return { phone: p, phoneLast3: last3 };
+}
+
 function doLogin() {
   if (state.loginPwd === LOGIN_PASSWORD) {
     state.warehouse = state.loginPickWarehouse;
@@ -615,8 +623,7 @@ async function saveAdd() {
     if (input) { input.style.borderColor = "#B96B6B"; input.focus(); }
     return;
   }
-  const cleanPhone = f.phone.trim();
-  const last3 = cleanPhone.length >= 3 ? cleanPhone.slice(-3) : cleanPhone;
+  const { phone: cleanPhone, phoneLast3: last3 } = normalizePhone(f.phone);
 
   const record = {
     id: uid(),
@@ -670,8 +677,7 @@ async function saveEdit() {
     return;
   }
 
-  const cleanPhone = f.phone.trim();
-  const last3 = cleanPhone.length >= 3 ? cleanPhone.slice(-3) : cleanPhone;
+  const { phone: cleanPhone, phoneLast3: last3 } = normalizePhone(f.phone);
 
   const updatedRecord = {
     category: f.category,
@@ -1410,8 +1416,8 @@ function bindEvents() {
   app.querySelectorAll('[data-act="addPhone"]').forEach(el => {
     el.oninput = (e) => {
       state.addForm.phone = e.target.value;
-      const clean = e.target.value.trim();
-      state.addForm.phoneLast3 = clean.length >= 3 ? clean.slice(-3) : clean;
+      const { phoneLast3 } = normalizePhone(e.target.value);
+      state.addForm.phoneLast3 = phoneLast3;
       el.style.borderColor = "";
       const err = document.getElementById("phoneError");
       if (err) err.style.display = "none";
@@ -1424,8 +1430,8 @@ function bindEvents() {
   app.querySelectorAll('[data-act="editPhone"]').forEach(el => {
     el.oninput = (e) => {
       state.editForm.phone = e.target.value;
-      const clean = e.target.value.trim();
-      state.editForm.phoneLast3 = clean.length >= 3 ? clean.slice(-3) : clean;
+      const { phoneLast3 } = normalizePhone(e.target.value);
+      state.editForm.phoneLast3 = phoneLast3;
       el.style.borderColor = "";
       const err = document.getElementById("editPhoneError");
       if (err) err.style.display = "none";
