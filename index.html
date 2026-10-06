@@ -271,68 +271,30 @@
 <body>
 <div id="app"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
 <script>
-const RAW_SUPABASE_URL = "https://fgfdvjjrzzjavcseulpg.supabase.co";
-const SUPABASE_URL = RAW_SUPABASE_URL.replace(/\/rest\/v1\/?$/, "").replace(/\/$/, "");
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnZmR2ampyenpqYXZjc2V1bHBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyNDQyODcsImV4cCI6MjEwMzgyMDI4N30.nJ7PCIJiQNUjTUK3cTtYjvdSocJU5XktP2yt-OQVOCE";
+// ==========================================
+// 填入您從 Google Apps Script 取得的部署網址
+// ==========================================
+const GOOGLE_SHEET_API_URL = "https://script.google.com/macros/s/AKfycbz..."; 
 
 const LOGIN_PASSWORD = "65905937";
 const STORAGE_KEY_ACTIVE = "cct_active_records";
 const STORAGE_KEY_HISTORY = "cct_history_records";
 
-let supabaseClient = null;
-let isCloudSynced = false;
+let isCloudSynced = Boolean(GOOGLE_SHEET_API_URL && !GOOGLE_SHEET_API_URL.includes("AKfycbz..."));
 
-if (typeof supabase !== "undefined" && SUPABASE_URL && SUPABASE_ANON_KEY) {
+async function callGasApi(action, payload = {}) {
+  if (!isCloudSynced) return;
   try {
-    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    isCloudSynced = true;
+    await fetch(GOOGLE_SHEET_API_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({ action, ...payload })
+    });
   } catch (err) {
-    console.error("Supabase 連線失敗，自動切換至本機模式", err);
-    isCloudSynced = false;
+    console.warn("GAS 寫入失敗 (本機暫存不受影響):", err);
   }
-}
-
-function toDbRecord(r, isHistory = false) {
-  const rec = {
-    id: r.id,
-    warehouse: r.warehouse,
-    category: r.category,
-    erliansubtype: r.erlianSubType || r.erliansubtype || "delivery",
-    createdat: r.createdAt || r.createdat || new Date().toISOString(),
-    phonelast3: r.phoneLast3 || r.phonelast3 || "",
-    lastname: r.lastName || r.lastname || "",
-    gender: r.gender || "先生",
-    area: r.area || "",
-    contact: r.contact || "",
-    fields: r.fields || {},
-    updatedat: r.updatedAt || r.updatedat || new Date().toISOString()
-  };
-  if (isHistory) {
-    rec.resolvedat = r.resolvedAt || r.resolvedat || new Date().toISOString();
-  }
-  return rec;
-}
-
-function fromDbRecord(r) {
-  if (!r) return null;
-  return {
-    id: r.id,
-    warehouse: r.warehouse,
-    category: r.category,
-    erlianSubType: r.erlianSubType || r.erliansubtype || "delivery",
-    createdAt: r.createdAt || r.createdat,
-    resolvedAt: r.resolvedAt || r.resolvedat,
-    phoneLast3: r.phoneLast3 || r.phonelast3 || "",
-    lastName: r.lastName || r.lastname || "",
-    gender: r.gender || "先生",
-    area: r.area || "",
-    contact: r.contact || "",
-    fields: r.fields || {},
-    updatedAt: r.updatedAt || r.updatedat
-  };
 }
 
 const CATEGORIES = [
@@ -418,7 +380,7 @@ const RAW_AREAS_SOUTH = {
 };
 const CONTACTS_SOUTH = ["Lena念臻", "Linda采陵", "Anna芊岱", "Wendy咨汶"];
 const RAW_AREAS_NORTH = RAW_AREAS_SOUTH;
-const CONTACTS_NORTH = CONTACTS_SOUTH;
+const CONTACTS_NORTH = ["Alani", "怡如", "Ting", "Jess"];
 
 function formatArea(county, district) {
   const shortCounty = county.replace(/[市縣]$/, "");
@@ -447,12 +409,15 @@ function uid() { return Date.now().toString(36) + Math.random().toString(36).sli
 function fmtDateTime(iso) {
   if (!iso) return "—";
   const d = new Date(iso), p = n => String(n).padStart(2, "0");
-  return `${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+  const weekDays = ["日", "一", "二", "三", "四", "五", "六"];
+  return `${d.getMonth()+1}/${d.getDate()}(${weekDays[d.getDay()]}) ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 function fmtDate(iso) {
   if (!iso) return "";
-  const d = new Date(iso), p = n => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return String(iso);
+  const weekDays = ["日", "一", "二", "三", "四", "五", "六"];
+  return `${d.getMonth()+1}/${d.getDate()}(${weekDays[d.getDay()]})`;
 }
 function daysSince(iso) { return Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 86400000)); }
 function esc(str) {
@@ -468,11 +433,7 @@ function copyToClipboard(text) {
   document.body.appendChild(ta);
   ta.focus();
   ta.select();
-  try {
-    document.execCommand("copy");
-  } catch (err) {
-    console.error("複製失敗", err);
-  }
+  try { document.execCommand("copy"); } catch (err) {}
   document.body.removeChild(ta);
 }
 
@@ -480,32 +441,34 @@ function generateChatTemplate(record, scenario = "standard") {
   const f = record.fields || {};
   const areaText = record.area || "未填寫";
   const nameText = `${record.lastName || ""}${record.gender || ""}`.trim() || "顧客";
+  const orderText = record.orderNumber ? `#${record.orderNumber}` : "#";
+  const phoneText = record.phone ? `${record.phone} (末三碼 ${record.phoneLast3})` : `末三碼 ${record.phoneLast3}`;
 
   if (record.category === "approve") {
-    return `@\n訂單：#\n客戶姓名：${nameText}\n因多日致電約配皆轉語音信箱，備用電話也無法聯繫上\n目前可提供車趟為：${f.availableTrip || ""}\n再麻煩與客確認當天是否方便收貨 謝謝\n(車趟可保留至前)`;
+    return `@\n訂單：${orderText}\n客戶姓名：${nameText}\n電話：${phoneText}\n因多日致電約配皆轉語音信箱，備用電話也無法聯繫上\n目前可提供車趟為：${f.availableTrip || ""}\n再麻煩與客確認當天是否方便收貨 謝謝\n(車趟可保留至前)`;
   }
   
   if (record.category === "complaint") {
-    return `@\n訂單：#\n客戶姓名：${nameText}\n因多日致電確認客訴處理時間皆轉語音信箱，備用電話也無法聯繫上\n目前可提供車趟為：${f.availableTrip || ""}\n再麻煩與客確認約配日期當天是否方便收貨 謝謝\n(車趟可保留至前)`;
+    return `@\n訂單：${orderText}\n客戶姓名：${nameText}\n電話：${phoneText}\n因多日致電確認客訴處理時間皆轉語音信箱，備用電話也無法聯繫上\n目前可提供車趟為：${f.availableTrip || ""}\n再麻煩與客確認約配日期當天是否方便收貨 謝謝\n(車趟可保留至前)`;
   }
 
   if (record.category === "erlian") {
     if (scenario === "rail") {
       const dateText = f.scheduledDate ? fmtDate(f.scheduledDate) : "(日期)";
       const timeText = f.scheduledTime || "";
-      return `@\n訂單 #\n姓名：${nameText}\n電話：末三碼 ${record.phoneLast3}\n地址：${areaText}\n\n已約 ${dateText} 到府升級 超級收納餐邊櫃 ()cm電軌，路線安排 ${timeText} 間抵達。\n電聯未接，需麻煩業務端LINE協助通知時段，當日再請顧客留意師傅抵達前30分鐘電聯，謝謝!`;
+      return `@\n訂單 ${orderText}\n姓名：${nameText}\n電話：${phoneText}\n地址：${areaText}\n\n已約 ${dateText} 到府升級 超級收納餐邊櫃 ()cm電軌，路線安排 ${timeText} 間抵達。\n電聯未接，需麻煩業務端LINE協助通知時段，當日再請顧客留意師傅抵達前30分鐘電聯，謝謝!`;
     }
     if (scenario === "complaint_erlian") {
       const dateText = f.scheduledDate ? fmtDate(f.scheduledDate) : "(日期)";
       const timeText = f.scheduledTime || "";
-      return `@\n客訴件編號：${f.complaintNo || ""}\n客戶姓名：${nameText}\n已排約 ${dateText} ${timeText} 回收 ${f.item || "(商品)"} 維修，\n今日二聯未接電話，再請協助通知顧客，謝謝!`;
+      return `@\n訂單：${orderText}\n客訴件編號：${f.complaintNo || ""}\n客戶姓名：${nameText}\n電話：${phoneText}\n已排約 ${dateText} ${timeText} 回收 ${f.item || "(商品)"} 維修，\n今日二聯未接電話，再請協助通知顧客，謝謝!`;
     }
     const dateText = f.scheduledDate ? fmtDate(f.scheduledDate) : "(日期)";
     const etaText = f.eta || "(時段)";
-    return `【通知時段】 @\n訂單 :\n姓名：${nameText}\n電話：末三碼 ${record.phoneLast3}\n地址：${areaText}\n\n已約 ${dateText}，順趟路線安排 ${etaText} 間送達。\n今日二聯都未接電話，需麻煩業務端LINE協助通知時段，再請顧客留意司機當日抵達前30分鐘電聯，謝謝!`;
+    return `【通知時段】 @\n訂單 : ${orderText}\n姓名：${nameText}\n電話：${phoneText}\n地址：${areaText}\n\n已約 ${dateText}，順趟路線安排 ${etaText} 間送達。\n今日二聯都未接電話，需麻煩業務端LINE協助通知時段，再請顧客留意司機當日抵達前30分鐘電聯，謝謝!`;
   }
 
-  return `@\n客戶：${nameText}（末三碼：${record.phoneLast3}）\n地區：${areaText}\n備註：${f.note || "無"}\n負責窗口：${record.contact}`;
+  return `@\n訂單：${orderText}\n客戶：${nameText}（電話：${phoneText}）\n地區：${areaText}\n備註：${f.note || "無"}\n負責窗口：${record.contact}`;
 }
 
 let state = {
@@ -542,10 +505,8 @@ let state = {
 };
 
 function loadStorage() {
-  try { state.activeRecords = JSON.parse(localStorage.getItem(STORAGE_KEY_ACTIVE) || "[]"); }
-  catch(e) { state.activeRecords = []; }
-  try { state.historyRecords = JSON.parse(localStorage.getItem(STORAGE_KEY_HISTORY) || "[]"); }
-  catch(e) { state.historyRecords = []; }
+  try { state.activeRecords = JSON.parse(localStorage.getItem(STORAGE_KEY_ACTIVE) || "[]"); } catch(e) { state.activeRecords = []; }
+  try { state.historyRecords = JSON.parse(localStorage.getItem(STORAGE_KEY_HISTORY) || "[]"); } catch(e) { state.historyRecords = []; }
 }
 function saveActiveLocal() {
   try { localStorage.setItem(STORAGE_KEY_ACTIVE, JSON.stringify(state.activeRecords)); } catch (e) {}
@@ -559,73 +520,36 @@ function isModalOpen() {
 }
 
 async function fetchCloudData(silent = false) {
-  if (!supabaseClient) return;
+  if (!isCloudSynced) return;
   try {
-    const { data: aData, error: aErr } = await supabaseClient.from('active_records').select('*');
-    if (!aErr && aData) state.activeRecords = aData.map(fromDbRecord);
-
-    const { data: hData, error: hErr } = await supabaseClient.from('history_records').select('*');
-    if (!hErr && hData) state.historyRecords = hData.map(fromDbRecord);
+    const res = await fetch(GOOGLE_SHEET_API_URL);
+    if (!res.ok) return;
+    const json = await res.json();
+    if (json.active) state.activeRecords = json.active;
+    if (json.history) state.historyRecords = json.history;
+    saveActiveLocal();
+    saveHistoryLocal();
 
     if (!silent) render();
     else {
-      // 只要有任何對話框 (Modal) 開啟中，背景同步時絕不重新渲染頁面，徹底防止對話框閃退或輸入失焦
       if (isModalOpen()) return;
-
       const activeEl = document.activeElement;
       if (!activeEl || (activeEl.tagName !== 'INPUT' && activeEl.tagName !== 'TEXTAREA')) {
         render();
       }
     }
   } catch (err) {
-    console.error("讀取雲端資料失敗", err);
+    console.warn("讀取 Google Sheet 雲端資料失敗，使用快取", err);
   }
 }
 
-async function initCloudSync() {
+function initSync() {
   loadStorage();
-  
-  if (!isCloudSynced || !supabaseClient) {
-    console.log("未設定 Supabase 金鑰，自動開啟 LocalStorage 本機模式");
-    render();
-    return;
-  }
-
-  await fetchCloudData();
-
-  // 定期輪詢 (每 5 秒備援刷新)
-  setInterval(() => {
-    fetchCloudData(true);
-  }, 5000);
-
-  // 安全地偵測當前環境（Canvas / Sandbox）是否允許建立 WebSocket
-  let supportsWebSocket = false;
-  try {
-    if (typeof WebSocket !== 'undefined') {
-      const wsUrl = SUPABASE_URL.replace(/^http/, 'ws') + '/realtime/v1/websocket';
-      const testWs = new WebSocket(wsUrl);
-      testWs.onerror = () => {};
-      testWs.close();
-      supportsWebSocket = true;
-    }
-  } catch (wsTestErr) {
-    console.warn("當前沙盒環境 (Canvas) 限制 WebSocket 連線，已自動啟用 HTTP REST 定時輪詢模式。");
-    supportsWebSocket = false;
-  }
-
-  // 僅在允許 WebSocket 的非沙盒環境中啟動 Supabase Realtime 廣播
-  if (supportsWebSocket) {
-    try {
-      supabaseClient
-        .channel('public:records')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'active_records' }, () => { if (!isModalOpen()) fetchCloudData(true); })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'history_records' }, () => { if (!isModalOpen()) fetchCloudData(true); })
-        .subscribe((status, err) => {
-          if (err) console.warn("Supabase Realtime 訂閱狀態:", status, err);
-        });
-    } catch (wsErr) {
-      console.warn("Realtime WebSocket 訂閱失敗，改用 HTTP 定時輪詢");
-    }
+  if (isCloudSynced) {
+    fetchCloudData();
+    setInterval(() => {
+      fetchCloudData(true);
+    }, 6000); // 每 6 秒背景自動與試算表比對更新
   }
 }
 
@@ -633,6 +557,8 @@ function freshAddForm() {
   return {
     category: "approve",
     erlianSubType: "delivery",
+    orderNumber: "",
+    phone: "",
     phoneLast3: "",
     lastName: "",
     gender: "先生",
@@ -647,7 +573,8 @@ function doLogin() {
     state.warehouse = state.loginPickWarehouse;
     state.authed = true;
     state.loginError = "";
-    if (!isCloudSynced) loadStorage();
+    loadStorage();
+    if (isCloudSynced) fetchCloudData();
   } else {
     state.loginError = "密碼錯誤，請再試一次";
   }
@@ -660,30 +587,38 @@ function closeAdd() { state.showAdd = false; state.addForm = null; render(); }
 
 async function saveAdd() {
   const f = state.addForm;
-  if (!f.phoneLast3.trim()) {
+  if (!f.phone.trim()) {
     const input = document.getElementById("phoneInput");
     const err = document.getElementById("phoneError");
     if (err) err.style.display = "block";
     if (input) { input.style.borderColor = "#B96B6B"; input.focus(); }
     return;
   }
-  const recordId = uid();
+  const cleanPhone = f.phone.trim();
+  const last3 = cleanPhone.length >= 3 ? cleanPhone.slice(-3) : cleanPhone;
+
   const record = {
-    id: recordId, warehouse: state.warehouse, category: f.category, erlianSubType: f.erlianSubType || "delivery", createdAt: new Date().toISOString(),
-    phoneLast3: f.phoneLast3.trim(), lastName: f.lastName.trim(), gender: f.gender,
-    area: f.area, contact: f.contact, fields: { ...f.fields },
+    id: uid(),
+    warehouse: state.warehouse,
+    category: f.category,
+    erlianSubType: f.erlianSubType || "delivery",
+    createdAt: new Date().toISOString(),
+    orderNumber: (f.orderNumber || "").trim(),
+    phone: cleanPhone,
+    phoneLast3: last3,
+    lastName: f.lastName.trim(),
+    gender: f.gender,
+    area: f.area,
+    contact: f.contact,
+    fields: { ...f.fields },
+    updatedAt: new Date().toISOString()
   };
 
   state.activeRecords.unshift(record);
   saveActiveLocal();
   closeAdd();
 
-  if (isCloudSynced && supabaseClient) {
-    try {
-      const { error } = await supabaseClient.from('active_records').insert([toDbRecord(record, false)]);
-      if (error) console.error("Cloud save error:", error);
-    } catch (e) { console.error("Cloud save failed:", e); }
-  }
+  callGasApi("add", { record });
 }
 
 function openEdit(id, type = "active") {
@@ -694,6 +629,9 @@ function openEdit(id, type = "active") {
   state.editType = type;
   state.editForm = {
     ...record,
+    orderNumber: record.orderNumber || "",
+    phone: record.phone || record.phoneLast3 || "",
+    phoneLast3: record.phoneLast3 || "",
     erlianSubType: record.erlianSubType || "delivery",
     fields: { ...(record.fields || {}) }
   };
@@ -703,7 +641,7 @@ function closeEdit() { state.editTarget = null; state.editForm = null; render();
 
 async function saveEdit() {
   const f = state.editForm;
-  if (!f.phoneLast3.trim()) {
+  if (!f.phone.trim()) {
     const input = document.getElementById("editPhoneInput");
     const err = document.getElementById("editPhoneError");
     if (err) err.style.display = "block";
@@ -711,10 +649,15 @@ async function saveEdit() {
     return;
   }
 
+  const cleanPhone = f.phone.trim();
+  const last3 = cleanPhone.length >= 3 ? cleanPhone.slice(-3) : cleanPhone;
+
   const updatedRecord = {
     category: f.category,
     erlianSubType: f.erlianSubType || "delivery",
-    phoneLast3: f.phoneLast3.trim(),
+    orderNumber: (f.orderNumber || "").trim(),
+    phone: cleanPhone,
+    phoneLast3: last3,
     lastName: f.lastName.trim(),
     gender: f.gender,
     area: f.area,
@@ -724,7 +667,7 @@ async function saveEdit() {
   };
 
   const isHist = state.editType !== "active";
-  if (state.editType === "active") {
+  if (!isHist) {
     const idx = state.activeRecords.findIndex(r => r.id === f.id);
     if (idx !== -1) {
       state.activeRecords[idx] = { ...state.activeRecords[idx], ...updatedRecord };
@@ -737,52 +680,33 @@ async function saveEdit() {
       saveHistoryLocal();
     }
   }
+  const full = { ...f, ...updatedRecord };
   closeEdit();
 
-  if (isCloudSynced && supabaseClient) {
-    try {
-      const table = isHist ? 'history_records' : 'active_records';
-      const fullRecord = { ...state.editForm, ...updatedRecord };
-      const { error } = await supabaseClient.from(table).update(toDbRecord(fullRecord, isHist)).eq('id', f.id);
-      if (error) console.error("Cloud update error:", error);
-    } catch (e) { console.error("Cloud update failed:", e); }
-  }
+  callGasApi("update", { record: full, isHistory: isHist });
 }
 
 function openChatBiz(id) {
   const record = state.activeRecords.find(r => r.id === id);
   if (!record) return;
   state.chatTarget = record;
-  
   let scenario = "standard";
   if (record.category === "erlian") {
     if (record.erlianSubType === "rail") scenario = "rail";
     else if (record.erlianSubType === "complaint") scenario = "complaint_erlian";
-    else scenario = "standard";
   }
-  
   state.chatScenario = scenario;
   state.chatText = generateChatTemplate(record, scenario);
   state.copySuccess = false;
   render();
 }
-
-function closeChatBiz() {
-  state.chatTarget = null;
-  state.chatText = "";
-  state.copySuccess = false;
-  render();
-}
-
+function closeChatBiz() { state.chatTarget = null; state.chatText = ""; state.copySuccess = false; render(); }
 function switchChatScenario(sc) {
   state.chatScenario = sc;
-  if (state.chatTarget) {
-    state.chatText = generateChatTemplate(state.chatTarget, sc);
-  }
+  if (state.chatTarget) state.chatText = generateChatTemplate(state.chatTarget, sc);
   state.copySuccess = false;
   render();
 }
-
 function doCopyChat() {
   copyToClipboard(state.chatText);
   state.copySuccess = true;
@@ -801,14 +725,7 @@ async function markDone(id) {
   saveActiveLocal();
   render();
 
-  if (isCloudSynced && supabaseClient) {
-    try {
-      await supabaseClient.from('active_records').delete().eq('id', id);
-      if (record.category === "zilian") {
-        await supabaseClient.from('history_records').insert([toDbRecord({ ...record, resolvedAt: new Date().toISOString() }, true)]);
-      }
-    } catch (e) { console.error("Cloud mark done failed:", e); }
-  }
+  callGasApi("done", { id });
 }
 
 function openConvert(id) {
@@ -826,8 +743,14 @@ async function confirmConvert() {
   const converted = {
     id: newId, warehouse: state.warehouse, category: "zilian",
     createdAt: record.createdAt, convertedAt: new Date().toISOString(),
-    phoneLast3: record.phoneLast3, lastName: record.lastName, gender: record.gender,
-    area: record.area, contact: record.contact, fields: { ...state.convertForm },
+    orderNumber: state.convertForm.orderNumber || record.orderNumber || "",
+    phone: record.phone || record.phoneLast3,
+    phoneLast3: record.phoneLast3,
+    lastName: record.lastName,
+    gender: record.gender,
+    area: record.area,
+    contact: record.contact,
+    fields: { ...state.convertForm },
   };
 
   state.activeRecords = state.activeRecords.filter(r => r.id !== record.id);
@@ -835,32 +758,54 @@ async function confirmConvert() {
   saveActiveLocal();
   closeConvert();
 
-  if (isCloudSynced && supabaseClient) {
-    try {
-      await supabaseClient.from('active_records').delete().eq('id', record.id);
-      await supabaseClient.from('active_records').insert([toDbRecord(converted, false)]);
-    } catch (e) { console.error("Cloud convert failed:", e); }
-  }
+  callGasApi("convert", { oldId: record.id, record: converted });
 }
 
 function getOverviewList() {
   return state.activeRecords
     .filter(r => r.warehouse === state.warehouse)
     .filter(r => state.filterCat === "all" ? true : r.category === state.filterCat)
-    .filter(r => state.filterDate ? fmtDate(r.createdAt) === state.filterDate : true)
-    .filter(r => state.search ? r.phoneLast3.includes(state.search) : true)
+    .filter(r => {
+      if (!state.filterDate) return true;
+      const d = new Date(r.createdAt);
+      const p = n => String(n).padStart(2, "0");
+      const recordDate = `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+      return recordDate === state.filterDate;
+    })
+    .filter(r => {
+      if (!state.search) return true;
+      const s = state.search.trim().toLowerCase();
+      const p3 = (r.phoneLast3 || "");
+      const fullPhone = (r.phone || "");
+      const order = (r.orderNumber || "").toLowerCase();
+      return p3.includes(s) || fullPhone.includes(s) || order.includes(s);
+    })
     .sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
 }
 function getZilianPending() {
   return state.activeRecords
     .filter(r => r.warehouse === state.warehouse && r.category === "zilian")
-    .filter(r => state.zilianSearch ? (r.phoneLast3.includes(state.zilianSearch) || (r.fields.orderNumber||"").includes(state.zilianSearch)) : true)
+    .filter(r => {
+      if (!state.zilianSearch) return true;
+      const s = state.zilianSearch.trim().toLowerCase();
+      const p3 = (r.phoneLast3 || "");
+      const fullPhone = (r.phone || "");
+      const order = (r.orderNumber || r.fields?.orderNumber || "").toLowerCase();
+      return p3.includes(s) || fullPhone.includes(s) || order.includes(s);
+    })
     .sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
 }
 function getZilianHistory() {
   return state.historyRecords
     .filter(r => r.warehouse === state.warehouse)
-    .filter(r => state.zilianSearch ? (r.phoneLast3.includes(state.zilianSearch) || (r.fields.orderNumber||"").includes(state.zilianSearch)) : true)
+    .filter(r => {
+      if (!state.zilianSearch) return true;
+      const s = state.zilianSearch.trim().toLowerCase();
+      const p3 = (r.phoneLast3 || "");
+      const fullPhone = (r.phone || "");
+      const order = (r.orderNumber || r.fields?.orderNumber || "").toLowerCase();
+      return p3.includes(s) || fullPhone.includes(s) || order.includes(s);
+    })
     .sort((a,b) => new Date(b.resolvedAt) - new Date(a.resolvedAt));
 }
 
@@ -905,7 +850,7 @@ function renderMain() {
           <div class="cct-header-sub">
             ${esc(wh.name)}
             <span class="cct-sync-status ${isCloudSynced ? 'online' : 'local'}">
-              ${isCloudSynced ? '🟢 雲端即時同步中' : '🟡 本機模式'}
+              ${isCloudSynced ? '🟢 Google 試算表連線中' : '🟡 本機離線模式'}
             </span>
           </div>
         </div>
@@ -931,8 +876,14 @@ function renderOverview() {
   const allWarehouseRecords = state.activeRecords.filter(r => r.warehouse === state.warehouse);
   const totalCount = allWarehouseRecords.length;
   const overdueCount = allWarehouseRecords.filter(r => daysSince(r.createdAt) >= 1).length;
-  const todayStr = fmtDate(new Date().toISOString());
-  const todayCount = allWarehouseRecords.filter(r => fmtDate(r.createdAt) === todayStr).length;
+  
+  const today = new Date();
+  const p = n => String(n).padStart(2, "0");
+  const todayStr = `${today.getFullYear()}-${p(today.getMonth()+1)}-${p(today.getDate())}`;
+  const todayCount = allWarehouseRecords.filter(r => {
+    const d = new Date(r.createdAt);
+    return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}` === todayStr;
+  }).length;
 
   const list = getOverviewList();
 
@@ -963,7 +914,7 @@ function renderOverview() {
 
     <div class="cct-filter-bar">
       <div class="cct-search-box">
-        🔍 <input type="text" inputmode="numeric" maxlength="3" placeholder="搜尋末三碼" id="searchInput" value="${esc(state.search)}" data-act="search" />
+        🔍 <input type="text" placeholder="搜尋電話、末三碼或訂單編號" id="searchInput" value="${esc(state.search)}" data-act="search" />
       </div>
       <div class="cct-date-box">
         📅 <input type="date" id="dateInput" value="${esc(state.filterDate)}" data-act="filterDate" />
@@ -996,7 +947,7 @@ function renderZilian() {
       <button type="button" class="cct-subtab ${state.subTab==='history'?'active':''}" data-act="subtab" data-subtab="history">歷史查詢</button>
     </nav>
     <div class="cct-search-box cct-search-wide">
-      🔍 <input type="text" placeholder="搜尋末三碼或訂單編號" id="zilianSearchInput" value="${esc(state.zilianSearch)}" data-act="zilianSearch" />
+      🔍 <input type="text" placeholder="搜尋電話、末三碼或訂單編號" id="zilianSearchInput" value="${esc(state.zilianSearch)}" data-act="zilianSearch" />
     </div>
     ${list.length === 0
       ? `<div class="cct-empty">${state.subTab==='pending' ? '目前沒有待處理的轉自聯紀錄' : '沒有符合的歷史紀錄'}</div>`
@@ -1032,22 +983,29 @@ function renderCard(record, showConvert, resolved) {
   }).join("");
   const hasExtra = extras.trim().length > 0;
 
+  const phoneDisplay = record.phone ? `${record.phone} (末三碼 ${record.phoneLast3})` : `末三碼 ${record.phoneLast3}`;
+  const orderDisplay = record.orderNumber ? `#${record.orderNumber}` : (record.fields?.orderNumber ? `#${record.fields.orderNumber}` : "");
+
   return `
     <div class="cct-card" style="--cat-color:${cardColor}">
       <div class="cct-card-bar"></div>
       <div class="cct-card-body">
         <div class="cct-card-top">
-          <span class="cct-tag" style="background:${cardColor}">${esc(catLabel)}</span>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span class="cct-tag" style="background:${cardColor}">${esc(catLabel)}</span>
+            ${orderDisplay ? `<span style="font-size:12px;font-weight:800;color:#3B82F6;background:#EFF6FF;padding:2px 8px;border-radius:6px;">${esc(orderDisplay)}</span>` : ""}
+          </div>
           <span class="cct-card-time">🕓 ${fmtDateTime(record.createdAt)}
             ${!resolved && days >= 1 ? `<span class="cct-age-badge">已等 ${days} 天</span>` : ""}
           </span>
         </div>
         <div class="cct-card-main">
-          <span class="cct-phone">📞 ${esc(record.phoneLast3)}</span>
+          <span class="cct-phone" title="${esc(phoneDisplay)}">📞 末三碼 ${esc(record.phoneLast3)}</span>
           <span class="cct-name">${esc(record.lastName || "—")}${esc(record.gender)}</span>
           <span class="cct-area">${esc(record.area || "未填區域")}</span>
           <span class="cct-contact">窗口：${esc(record.contact)}</span>
         </div>
+        ${record.phone ? `<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;font-weight:600;">完整電話：<span style="color:#0F172A;font-weight:700;">${esc(record.phone)}</span></div>` : ""}
         ${hasExtra ? `<div class="cct-card-extra">${extras}</div>` : ""}
         ${resolved && record.resolvedAt ? `<div class="cct-resolved-note">已於 ${fmtDate(record.resolvedAt)} 完成處理</div>` : ""}
         <div class="cct-card-actions">
@@ -1174,16 +1132,20 @@ function renderAddModal() {
           ` : ""}
           <div class="cct-grid-2">
             <div class="cct-field">
-              <label>電話末三碼</label>
-              <input type="text" id="phoneInput" inputmode="numeric" maxlength="3" value="${esc(f.phoneLast3)}" data-act="addPhone" placeholder="123" />
-              <div class="cct-login-error" id="phoneError" style="display:none;margin-top:4px;margin-bottom:0;">請先輸入電話末三碼</div>
+              <label>顧客電話（完整號碼）</label>
+              <input type="tel" id="phoneInput" value="${esc(f.phone)}" data-act="addPhone" placeholder="例如：0912345678" />
+              <div class="cct-login-error" id="phoneError" style="display:none;margin-top:4px;margin-bottom:0;">請輸入電話號碼</div>
             </div>
             <div class="cct-field">
-              <label>顧客姓氏</label>
-              <input type="text" value="${esc(f.lastName)}" data-act="addLastName" placeholder="王" />
+              <label>訂單編號（選填）</label>
+              <input type="text" value="${esc(f.orderNumber)}" data-act="addOrderNumber" placeholder="例如：SO123456" />
             </div>
           </div>
           <div class="cct-grid-2">
+            <div class="cct-field">
+              <label>顧客姓氏</label>
+              <input type="text" value="${esc(f.lastName)}" data-act="addLastName" placeholder="例如：王" />
+            </div>
             <div class="cct-field">
               <label>稱謂</label>
               <div class="cct-toggle">
@@ -1191,6 +1153,8 @@ function renderAddModal() {
                 <button type="button" class="cct-toggle-btn ${f.gender==='小姐'?'active':''}" data-act="addGender" data-g="小姐">小姐</button>
               </div>
             </div>
+          </div>
+          <div class="cct-grid-2">
             <div class="cct-field">
               <label>負責窗口</label>
               <select data-act="addContact">
@@ -1238,16 +1202,20 @@ function renderEditModal() {
           ` : ""}
           <div class="cct-grid-2">
             <div class="cct-field">
-              <label>電話末三碼</label>
-              <input type="text" id="editPhoneInput" inputmode="numeric" maxlength="3" value="${esc(f.phoneLast3)}" data-act="editPhone" placeholder="123" />
-              <div class="cct-login-error" id="editPhoneError" style="display:none;margin-top:4px;margin-bottom:0;">請先輸入電話末三碼</div>
+              <label>顧客電話（完整號碼）</label>
+              <input type="tel" id="editPhoneInput" value="${esc(f.phone)}" data-act="editPhone" placeholder="例如：0912345678" />
+              <div class="cct-login-error" id="editPhoneError" style="display:none;margin-top:4px;margin-bottom:0;">請輸入電話號碼</div>
             </div>
             <div class="cct-field">
-              <label>顧客姓氏</label>
-              <input type="text" value="${esc(f.lastName)}" data-act="editLastName" placeholder="王" />
+              <label>訂單編號（選填）</label>
+              <input type="text" value="${esc(f.orderNumber)}" data-act="editOrderNumber" placeholder="例如：SO123456" />
             </div>
           </div>
           <div class="cct-grid-2">
+            <div class="cct-field">
+              <label>顧客姓氏</label>
+              <input type="text" value="${esc(f.lastName)}" data-act="editLastName" placeholder="例如：王" />
+            </div>
             <div class="cct-field">
               <label>稱謂</label>
               <div class="cct-toggle">
@@ -1255,6 +1223,8 @@ function renderEditModal() {
                 <button type="button" class="cct-toggle-btn ${f.gender==='小姐'?'active':''}" data-act="editGender" data-g="小姐">小姐</button>
               </div>
             </div>
+          </div>
+          <div class="cct-grid-2">
             <div class="cct-field">
               <label>負責窗口</label>
               <select data-act="editContact">
@@ -1318,7 +1288,11 @@ function renderConvertModal() {
         <div class="cct-modal-header"><h2>轉入自聯</h2><button type="button" class="cct-icon-btn" data-act="close-convert">✕</button></div>
         <div class="cct-modal-body">
           <p class="cct-hint">末三碼 ${esc(record.phoneLast3)}・${esc(record.lastName||"—")}${esc(record.gender)}・${esc(record.area||"—")} 將轉為「轉自聯」分類，請補上以下資訊：</p>
-          ${CONVERT_FIELDS.map(fd => renderDynamicField(fd, state.convertForm[fd.key], "convert")).join("")}
+          <div class="cct-field">
+            <label>訂單編號</label>
+            <input type="text" data-scope="convert" data-key="orderNumber" data-act="field" value="${esc(state.convertForm.orderNumber || record.orderNumber || '')}" placeholder="請輸入訂單編號" />
+          </div>
+          ${CONVERT_FIELDS.filter(fd => fd.key !== 'orderNumber').map(fd => renderDynamicField(fd, state.convertForm[fd.key], "convert")).join("")}
         </div>
         <div class="cct-modal-footer">
           <button type="button" class="cct-btn cct-btn-ghost" data-act="close-convert">取消</button>
@@ -1391,7 +1365,7 @@ function bindEvents() {
   });
 
   const searchInput = app.querySelector("#searchInput");
-  if (searchInput) searchInput.oninput = (e) => { state.search = e.target.value.replace(/[^0-9]/g, ""); renderListOnly(); };
+  if (searchInput) searchInput.oninput = (e) => { state.search = e.target.value; renderListOnly(); };
 
   const dateInput = app.querySelector("#dateInput");
   if (dateInput) dateInput.onchange = (e) => { state.filterDate = e.target.value; render(); };
@@ -1412,25 +1386,29 @@ function bindEvents() {
 
   app.querySelectorAll('[data-act="addPhone"]').forEach(el => {
     el.oninput = (e) => {
-      state.addForm.phoneLast3 = e.target.value.replace(/[^0-9]/g, "");
-      e.target.value = state.addForm.phoneLast3;
+      state.addForm.phone = e.target.value;
+      const clean = e.target.value.trim();
+      state.addForm.phoneLast3 = clean.length >= 3 ? clean.slice(-3) : clean;
       el.style.borderColor = "";
       const err = document.getElementById("phoneError");
       if (err) err.style.display = "none";
     };
   });
+  app.querySelectorAll('[data-act="addOrderNumber"]').forEach(el => { el.oninput = (e) => { state.addForm.orderNumber = e.target.value; }; });
   app.querySelectorAll('[data-act="addLastName"]').forEach(el => { el.oninput = (e) => { state.addForm.lastName = e.target.value; }; });
   app.querySelectorAll('[data-act="addContact"]').forEach(el => { el.onchange = (e) => { state.addForm.contact = e.target.value; }; });
 
   app.querySelectorAll('[data-act="editPhone"]').forEach(el => {
     el.oninput = (e) => {
-      state.editForm.phoneLast3 = e.target.value.replace(/[^0-9]/g, "");
-      e.target.value = state.editForm.phoneLast3;
+      state.editForm.phone = e.target.value;
+      const clean = e.target.value.trim();
+      state.editForm.phoneLast3 = clean.length >= 3 ? clean.slice(-3) : clean;
       el.style.borderColor = "";
       const err = document.getElementById("editPhoneError");
       if (err) err.style.display = "none";
     };
   });
+  app.querySelectorAll('[data-act="editOrderNumber"]').forEach(el => { el.oninput = (e) => { state.editForm.orderNumber = e.target.value; }; });
   app.querySelectorAll('[data-act="editLastName"]').forEach(el => { el.oninput = (e) => { state.editForm.lastName = e.target.value; }; });
   app.querySelectorAll('[data-act="editContact"]').forEach(el => { el.onchange = (e) => { state.editForm.contact = e.target.value; }; });
 
@@ -1486,7 +1464,7 @@ function renderListOnly() {
   }
 }
 
-initCloudSync();
+initSync();
 render();
 </script>
 </body>
