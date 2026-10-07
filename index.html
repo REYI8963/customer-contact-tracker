@@ -540,14 +540,40 @@ function isModalOpen() {
   return !!(state.showAdd || state.editTarget || state.convertTarget || state.chatTarget);
 }
 
+// 智慧合併：防止 Google 試算表寫入延遲導致剛新增的卡片被雲端舊資料洗掉
+function mergeRecords(localList, cloudList) {
+  const cloudMap = new Map(cloudList.map(r => [r.id, r]));
+  const merged = [...cloudList];
+  
+  // 檢查本機是否有剛建立、但 Google 試算表尚未回傳的新紀錄 (15秒緩衝期)
+  const now = Date.now();
+  localList.forEach(localRec => {
+    if (!cloudMap.has(localRec.id)) {
+      const createdTime = new Date(localRec.createdAt || 0).getTime();
+      // 建立時間在 15 秒以內，視為「Google 試算表還在排隊寫入中」，予以保留保護
+      if (now - createdTime < 15000) {
+        merged.unshift(localRec);
+      }
+    }
+  });
+
+  // 依時間排序（新到舊）
+  return merged.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+}
+
 async function fetchCloudData(silent = false) {
   if (!isCloudSynced) return;
   try {
     const res = await fetch(GOOGLE_SHEET_API_URL);
     if (!res.ok) return;
     const json = await res.json();
-    if (json.active) state.activeRecords = json.active;
-    if (json.history) state.historyRecords = json.history;
+    
+    if (json.active) {
+      state.activeRecords = mergeRecords(state.activeRecords, json.active);
+    }
+    if (json.history) {
+      state.historyRecords = json.history;
+    }
     saveActiveLocal();
     saveHistoryLocal();
 
